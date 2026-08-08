@@ -1,4 +1,4 @@
-package com.ochuzor.burger_of_the_day;
+package com.ochuzor.burgeroftheday;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

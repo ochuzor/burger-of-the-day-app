@@ -1,4 +1,4 @@
-package com.ochuzor.burger_of_the_day;
+package com.ochuzor.burgeroftheday;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
