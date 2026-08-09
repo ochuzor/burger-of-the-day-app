@@ -78,12 +78,15 @@ Repository setup completed so far:
 - Durable mentoring instructions and this project brief added.
 - Create-request validation implemented and tested, including boundary cases.
 - Initial PostgreSQL schema migration drafted and statically reviewed.
+- Local PostgreSQL 18 Compose service configured and verified healthy, including
+  application-role connectivity and persistent storage.
 
 ## Next task
 
-Establish a reproducible local PostgreSQL instance, execute the first Flyway
-migration against it, and then continue the create-burger vertical slice
-through JPA persistence, service behavior, HTTP, and integration tests.
+Add the JPA, PostgreSQL, and Flyway dependencies and application configuration,
+then execute the first Flyway migration against the local PostgreSQL instance.
+Continue the create-burger vertical slice through JPA persistence, service
+behavior, HTTP, and integration tests afterward.
 
 ## Important decisions
 
@@ -100,6 +103,7 @@ through JPA persistence, service behavior, HTTP, and integration tests.
 - The project currently uses port 8081 for local development.
 - The MVP uses PostgreSQL locally and in deployment rather than maintaining
   separate SQLite and PostgreSQL migrations.
+- Local development uses the official PostgreSQL 18 container image.
 - User IDs are UUIDs; Burger of the Day IDs are generated numeric IDs.
 - Burger board text is required, whitespace-preserving, and limited to 150
   characters. Optional commentary is limited to 500 characters.
