@@ -90,12 +90,14 @@ Repository setup completed so far:
   application-generated UUID identity; Hibernate schema validation passes.
 - Spotless 3.9.0 with Google Java Format is pinned, formats main and test Java
   sources, and enforces `spotless:check` during Maven `verify`.
+- The Flyway-managed `burger_of_the_day` table is mapped as a
+  `BurgerOfTheDay` JPA entity with database-generated numeric identity and a
+  required lazy many-to-one creator relationship; schema validation passes.
 
 ## Next task
 
-Map the Flyway-managed `burger_of_the_day` table as `BurgerOfTheDay`, including
-its required many-to-one creator relationship, and validate the mapping against
-PostgreSQL.
+Add the `UserRepository` and `BurgerOfTheDayRepository` interfaces needed by
+the create flow, then verify actual inserts and reads with a focused JPA test.
 
 ## Important decisions
 
