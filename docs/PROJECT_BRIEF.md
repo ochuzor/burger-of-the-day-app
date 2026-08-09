@@ -86,12 +86,14 @@ Repository setup completed so far:
 - Flyway migration version 1 executed successfully against PostgreSQL 18;
   `app_user`, `burger_of_the_day`, and `flyway_schema_history` were verified.
 - The full nine-test Maven suite passes with the local database environment.
+- The Flyway-managed `app_user` table is mapped as a `User` JPA entity with
+  application-generated UUID identity; Hibernate schema validation passes.
 
 ## Next task
 
-Disable Open EntityManager in View for explicit persistence boundaries, then
-continue the create-burger vertical slice with the `User` and
-`BurgerOfTheDay` JPA mappings and focused persistence verification.
+Configure Spotless for deterministic Java formatting and enforce its check in
+the Maven lifecycle. Then map `BurgerOfTheDay` and its required creator
+relationship.
 
 ## Important decisions
 
