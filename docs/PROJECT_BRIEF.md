@@ -80,13 +80,15 @@ Repository setup completed so far:
 - Initial PostgreSQL schema migration drafted and statically reviewed.
 - Local PostgreSQL 18 Compose service configured and verified healthy, including
   application-role connectivity and persistent storage.
+- Spring Data JPA, Flyway, Flyway PostgreSQL support, and the PostgreSQL JDBC
+  driver added with Spring Boot-managed versions; packaging succeeds.
 
 ## Next task
 
-Add the JPA, PostgreSQL, and Flyway dependencies and application configuration,
-then execute the first Flyway migration against the local PostgreSQL instance.
-Continue the create-burger vertical slice through JPA persistence, service
-behavior, HTTP, and integration tests afterward.
+Configure the application datasource from environment variables and execute the
+first Flyway migration against local PostgreSQL. Continue the create-burger
+vertical slice through JPA persistence, service behavior, HTTP, and integration
+tests afterward.
 
 ## Important decisions
 
