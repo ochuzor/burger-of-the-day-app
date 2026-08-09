@@ -82,13 +82,16 @@ Repository setup completed so far:
   application-role connectivity and persistent storage.
 - Spring Data JPA, Flyway, Flyway PostgreSQL support, and the PostgreSQL JDBC
   driver added with Spring Boot-managed versions; packaging succeeds.
+- Datasource configuration reads local credentials from environment variables.
+- Flyway migration version 1 executed successfully against PostgreSQL 18;
+  `app_user`, `burger_of_the_day`, and `flyway_schema_history` were verified.
+- The full nine-test Maven suite passes with the local database environment.
 
 ## Next task
 
-Configure the application datasource from environment variables and execute the
-first Flyway migration against local PostgreSQL. Continue the create-burger
-vertical slice through JPA persistence, service behavior, HTTP, and integration
-tests afterward.
+Disable Open EntityManager in View for explicit persistence boundaries, then
+continue the create-burger vertical slice with the `User` and
+`BurgerOfTheDay` JPA mappings and focused persistence verification.
 
 ## Important decisions
 
