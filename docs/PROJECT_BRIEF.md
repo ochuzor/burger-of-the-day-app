@@ -88,12 +88,14 @@ Repository setup completed so far:
 - The full nine-test Maven suite passes with the local database environment.
 - The Flyway-managed `app_user` table is mapped as a `User` JPA entity with
   application-generated UUID identity; Hibernate schema validation passes.
+- Spotless 3.9.0 with Google Java Format is pinned, formats main and test Java
+  sources, and enforces `spotless:check` during Maven `verify`.
 
 ## Next task
 
-Configure Spotless for deterministic Java formatting and enforce its check in
-the Maven lifecycle. Then map `BurgerOfTheDay` and its required creator
-relationship.
+Map the Flyway-managed `burger_of_the_day` table as `BurgerOfTheDay`, including
+its required many-to-one creator relationship, and validate the mapping against
+PostgreSQL.
 
 ## Important decisions
 
