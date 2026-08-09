@@ -3,7 +3,8 @@
 ## Product purpose
 
 Build a small Spring Boot API inspired by the "Burger of the Day" board from
-*Bob's Burgers*. The precise product behavior and MVP are not yet agreed.
+*Bob's Burgers*. Users submit short fictional burger-board ideas for today or
+a future date, and published ideas are publicly readable.
 
 This is both a usable application and a portfolio learning project. Its primary
 learning purpose is to apply the completed Java and Spring Boot curricula in a
@@ -11,29 +12,29 @@ project designed and implemented from scratch.
 
 ## Intended users
 
-Pending product definition.
-
-Likely users may include fans or developers who want to create, browse, or
-select themed burger names, but this must be confirmed before features are
-designed.
+Fans can publish and browse fictional Burger of the Day ideas. Viewing
+published ideas does not require an account. During the first version, seeded
+users are identified by a temporary `X-Username` request header; this is
+explicitly not production authentication.
 
 ## Scope and exclusions
 
 ### Current scope
 
-- Define a small, finishable MVP.
-- Build the MVP through complete vertical features.
-- Use production-oriented structure and habits in proportion to the project's
-  size.
-- Keep the application runnable locally without paid or external infrastructure
-  during its initial development.
+- Create a Burger of the Day scheduled for today or a future date.
+- Let only its creator view and edit it before its publication date.
+- Make it public and immutable when its publication date arrives.
+- Let its creator hide and unhide it after publication.
+- List public burgers by creator and publication date.
+- Use one application-wide UTC business date.
 
 ### Current exclusions
 
 Until explicitly brought into scope:
 
-- Authentication and authorization
+- Production authentication, registration, and password handling
 - A browser or mobile frontend
+- Voting, winners, and comments
 - Microservices or distributed messaging
 - Cloud deployment infrastructure
 - External databases or third-party APIs
@@ -58,8 +59,10 @@ The repository currently contains a generated, minimal Spring Boot application:
 - Application name: `burger-of-the-day`
 - Local HTTP port: `8081`
 
-No controller, domain model, service layer, persistence layer, database,
-migration, or product feature exists yet.
+The create request DTO and its focused Jakarta Validation tests exist. A first
+PostgreSQL Flyway migration has been drafted for `app_user` and
+`burger_of_the_day`. No controller, service, JPA entity, repository, or
+completed HTTP feature exists yet.
 
 ## Completed features
 
@@ -73,20 +76,14 @@ Repository setup completed so far:
 - Basic context-load test created.
 - Application configured to run on port 8081.
 - Durable mentoring instructions and this project brief added.
+- Create-request validation implemented and tested, including boundary cases.
+- Initial PostgreSQL schema migration drafted and statically reviewed.
 
 ## Next task
 
-Define the product before adding more application code:
-
-1. Describe the primary user.
-2. State the problem or useful outcome the API provides.
-3. Choose the smallest MVP behavior.
-4. List explicit non-goals for the first version.
-5. Define the first useful vertical feature and its acceptance criteria.
-6. Define what "finished" means for the MVP.
-
-Do not add domain classes, controllers, persistence, or more dependencies until
-these decisions are made.
+Establish a reproducible local PostgreSQL instance, execute the first Flyway
+migration against it, and then continue the create-burger vertical slice
+through JPA persistence, service behavior, HTTP, and integration tests.
 
 ## Important decisions
 
@@ -101,14 +98,18 @@ these decisions are made.
 - Java 21 and Maven are the baseline toolchain.
 - The initial project uses Spring Boot 4.1.0, Spring MVC, and Jakarta Validation.
 - The project currently uses port 8081 for local development.
+- The MVP uses PostgreSQL locally and in deployment rather than maintaining
+  separate SQLite and PostgreSQL migrations.
+- User IDs are UUIDs; Burger of the Day IDs are generated numeric IDs.
+- Burger board text is required, whitespace-preserving, and limited to 150
+  characters. Optional commentary is limited to 500 characters.
+- Publication is derived from `publishDate` relative to UTC; no midnight
+  scheduler is required.
+- Published burgers are immutable. Their creators may hide and unhide them.
+- PostgreSQL schema changes are managed with versioned Flyway migrations.
 
 ### Pending
 
-- Exact product purpose and target user
-- MVP use cases and acceptance criteria
-- Domain vocabulary and model
-- Persistence requirements and database choice
-- Public API shape
 - Testing strategy for the first vertical slice
 - Deployment target
 
