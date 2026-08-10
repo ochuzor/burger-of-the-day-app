@@ -59,9 +59,9 @@ The repository currently contains a generated, minimal Spring Boot application:
 - Application name: `burger-of-the-day`
 - Local HTTP port: `8081`
 
-The create request DTO and its focused Jakarta Validation tests exist. A first
-PostgreSQL Flyway migration has been drafted for `app_user` and
-`burger_of_the_day`. No controller, service, JPA entity, repository, or
+The create request DTO and its focused Jakarta Validation tests exist. The
+initial PostgreSQL Flyway migration, JPA entities, and Spring Data repositories
+for `app_user` and `burger_of_the_day` exist. No controller, service, or
 completed HTTP feature exists yet.
 
 ## Completed features
@@ -93,11 +93,13 @@ Repository setup completed so far:
 - The Flyway-managed `burger_of_the_day` table is mapped as a
   `BurgerOfTheDay` JPA entity with database-generated numeric identity and a
   required lazy many-to-one creator relationship; schema validation passes.
+- `UserRepository` and `BurgerOfTheDayRepository` are registered as Spring Data
+  JPA repositories; application startup discovers both interfaces.
 
 ## Next task
 
-Add the `UserRepository` and `BurgerOfTheDayRepository` interfaces needed by
-the create flow, then verify actual inserts and reads with a focused JPA test.
+Verify actual user and Burger of the Day inserts and reads with a focused JPA
+test.
 
 ## Important decisions
 
