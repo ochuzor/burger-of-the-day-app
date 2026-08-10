@@ -73,7 +73,9 @@
 				<version>3.9.0</version>
 				<configuration>
 					<java>
-						<googleJavaFormat />
+						<googleJavaFormat>
+							<version>1.28.0</version>
+						</googleJavaFormat>
 					</java>
 				</configuration>
 				<executions>
