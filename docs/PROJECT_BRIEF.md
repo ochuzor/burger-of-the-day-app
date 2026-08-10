@@ -96,11 +96,15 @@ Repository setup completed so far:
   required lazy many-to-one creator relationship; schema validation passes.
 - `UserRepository` and `BurgerOfTheDayRepository` are registered as Spring Data
   JPA repositories; application startup discovers both interfaces.
+- A focused PostgreSQL `@DataJpaTest` verifies generated user and burger IDs,
+  persisted burger fields, default visibility, and the creator relationship.
+  Clearing the persistence context before retrieval ensures the assertions
+  exercise actual database reads.
 
 ## Next task
 
-Verify actual user and Burger of the Day inserts and reads with a focused JPA
-test.
+Begin the create-Burger-of-the-Day vertical slice at the application service
+boundary, including creator lookup and UTC publication-date validation.
 
 ## Important decisions
 
