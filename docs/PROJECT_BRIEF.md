@@ -35,6 +35,7 @@ Until explicitly brought into scope:
 - Production authentication, registration, and password handling
 - A browser or mobile frontend
 - Voting, winners, and comments
+- Tags and browsing or searching published posts by tag
 - Microservices or distributed messaging
 - Cloud deployment infrastructure
 - External databases or third-party APIs
@@ -124,6 +125,9 @@ test.
   scheduler is required.
 - Published burgers are immutable. Their creators may hide and unhide them.
 - PostgreSQL schema changes are managed with versioned Flyway migrations.
+- A future version may let creators add tags to their posts and let public
+  users select a tag to browse related published Burger of the Day posts. Tags
+  are explicitly excluded from the current MVP.
 
 ### Pending
 
