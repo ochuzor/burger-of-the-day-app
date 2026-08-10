@@ -100,11 +100,16 @@ Repository setup completed so far:
   persisted burger fields, default visibility, and the creator relationship.
   Clearing the persistence context before retrieval ensures the assertions
   exercise actual database reads.
+- `BurgerOfTheDayService` implements creator lookup, UTC publication-date
+  validation, timestamp creation through an injected `Clock`, and transactional
+  persistence. A production UTC `Clock` bean is configured.
+- VS Code uses the same pinned google-java-format version as Spotless and loads
+  the ignored local `.env` file when tests are launched from the editor.
 
 ## Next task
 
-Begin the create-Burger-of-the-Day vertical slice at the application service
-boundary, including creator lookup and UTC publication-date validation.
+Add focused tests for the create service's successful, unknown-user, and past-
+publication-date paths before adding the HTTP controller.
 
 ## Important decisions
 

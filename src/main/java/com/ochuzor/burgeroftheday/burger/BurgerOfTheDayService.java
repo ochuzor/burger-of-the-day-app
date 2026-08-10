@@ -1,0 +1,46 @@
+package com.ochuzor.burgeroftheday.burger;
+
+import com.ochuzor.burgeroftheday.user.UnknownUserException;
+import com.ochuzor.burgeroftheday.user.User;
+import com.ochuzor.burgeroftheday.user.UserRepository;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class BurgerOfTheDayService {
+  private final BurgerOfTheDayRepository burgerOfTheDayRepository;
+  private final UserRepository userRepository;
+  private final Clock clock;
+
+  public BurgerOfTheDayService(
+      BurgerOfTheDayRepository burgerOfTheDayRepository,
+      UserRepository userRepository,
+      Clock clock) {
+    this.burgerOfTheDayRepository = burgerOfTheDayRepository;
+    this.userRepository = userRepository;
+    this.clock = clock;
+  }
+
+  @Transactional
+  public Long createBurgerOfTheDay(
+      String text, String commentary, LocalDate publishDate, String username) {
+    User creator =
+        this.userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new UnknownUserException("user not found"));
+
+    LocalDate today = LocalDate.now(this.clock);
+    if (publishDate.isBefore(today)) {
+      throw new PastPublicationDateException("Date: " + publishDate + " is in the past");
+    }
+
+    Instant createdAt = Instant.now(clock);
+    BurgerOfTheDay burgerOfTheDay =
+        new BurgerOfTheDay(text, commentary, createdAt, publishDate, creator);
+    BurgerOfTheDay savedBurgerOfTheDay = this.burgerOfTheDayRepository.save(burgerOfTheDay);
+    return savedBurgerOfTheDay.getId();
+  }
+}
