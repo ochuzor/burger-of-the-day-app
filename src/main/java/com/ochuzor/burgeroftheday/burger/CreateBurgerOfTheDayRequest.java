@@ -1,5 +1,6 @@
 package com.ochuzor.burgeroftheday.burger;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -11,4 +12,5 @@ public record CreateBurgerOfTheDayRequest(
         String text,
     @Size(max = 500, message = "Commentary must not be longer than 500 characters")
         String commentary,
-    @NotNull(message = "Must provide a publish date") LocalDate publishDate) {}
+    @JsonProperty("publish_date") @NotNull(message = "Must provide a publish date")
+        LocalDate publishDate) {}
