@@ -103,13 +103,16 @@ Repository setup completed so far:
 - `BurgerOfTheDayService` implements creator lookup, UTC publication-date
   validation, timestamp creation through an injected `Clock`, and transactional
   persistence. A production UTC `Clock` bean is configured.
+- Focused Mockito unit tests cover successful creation, unknown creators, and
+  past publication dates. The successful path captures and verifies the entity
+  sent to persistence using a fixed UTC clock.
 - VS Code uses the same pinned google-java-format version as Spotless and loads
   the ignored local `.env` file when tests are launched from the editor.
 
 ## Next task
 
-Add focused tests for the create service's successful, unknown-user, and past-
-publication-date paths before adding the HTTP controller.
+Design and implement the HTTP controller for creating a Burger of the Day,
+including request validation, `X-Username`, `201 Created`, and `Location`.
 
 ## Important decisions
 
