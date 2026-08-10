@@ -4,6 +4,8 @@ import com.ochuzor.burgeroftheday.user.MissingUsernameException;
 import com.ochuzor.burgeroftheday.user.UnknownUserException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -13,5 +15,17 @@ public class ApiExceptionHandler {
   ResponseEntity<ApiErrorResponse> handleUnauthorized(RuntimeException exception) {
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
         .body(new ApiErrorResponse("unauthorized"));
+  }
+
+  @ExceptionHandler(MethodArgumentNotValidException.class)
+  ResponseEntity<ApiErrorResponse> handleValidation(MethodArgumentNotValidException exception) {
+    FieldError fieldError = exception.getBindingResult().getFieldError();
+
+    String message =
+        fieldError != null && fieldError.getDefaultMessage() != null
+            ? fieldError.getDefaultMessage()
+            : "invalid request";
+
+    return ResponseEntity.badRequest().body(new ApiErrorResponse(message));
   }
 }

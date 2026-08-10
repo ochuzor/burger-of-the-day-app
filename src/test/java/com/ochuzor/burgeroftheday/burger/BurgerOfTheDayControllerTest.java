@@ -102,4 +102,26 @@ class BurgerOfTheDayControllerTest {
         .createBurgerOfTheDay(
             "Spicy Burger", "Comes with spices", LocalDate.of(2026, 8, 10), "unknown");
   }
+
+  @Test
+  void blankTextReturnsBadRequest() throws Exception {
+    mockMvc
+        .perform(
+            post("/burger-of-the-day")
+                .header("X-Username", "tester")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "text": "     ",
+                      "commentary": "Comes with spices",
+                      "publish_date": "2026-08-10"
+                    }
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.error").value("text should not be empty"));
+
+    verifyNoInteractions(service);
+  }
 }
