@@ -62,13 +62,14 @@ The repository currently contains a generated, minimal Spring Boot application:
 
 The create request DTO, controller, service, PostgreSQL Flyway migration, JPA
 entities, and Spring Data repositories for `app_user` and
-`burger_of_the_day` exist. Their focused validation, web, service, and
-repository tests pass. The create feature still needs a full HTTP-to-database
-integration test before it is considered complete.
+`burger_of_the_day` exist. Their focused validation, web, service, repository,
+and full HTTP-to-database integration tests pass.
 
 ## Completed features
 
-No product features are complete.
+The first vertical product feature is complete: a known user can create a
+Burger of the Day for today or a future date through HTTP and receive its
+generated resource location.
 
 Repository setup completed so far:
 
@@ -112,15 +113,18 @@ Repository setup completed so far:
   stable JSON errors for validation, authorization, past publication dates,
   invalid dates, and malformed JSON. Seven focused MockMvc tests cover these
   behaviors.
-- The full 20-test Maven verification passes against local PostgreSQL, including
-  Spotless enforcement and executable JAR packaging.
+- A transactional `@SpringBootTest` sends a real create request through MockMvc
+  and verifies the generated Burger of the Day through PostgreSQL after
+  clearing the persistence context. The full 21-test Maven verification passes
+  against local PostgreSQL, including Spotless enforcement and executable JAR
+  packaging.
 - VS Code uses the same pinned google-java-format version as Spotless and loads
   the ignored local `.env` file when tests are launched from the editor.
 
 ## Next task
 
-Add a full integration test for creating a Burger of the Day through HTTP and
-verifying the resulting PostgreSQL state.
+Design the public read-by-ID feature for published Burgers of the Day so that
+the `Location` returned by creation identifies a retrievable resource.
 
 ## Important decisions
 
