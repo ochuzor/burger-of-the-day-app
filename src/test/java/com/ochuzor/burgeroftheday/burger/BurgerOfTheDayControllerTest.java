@@ -124,4 +124,54 @@ class BurgerOfTheDayControllerTest {
 
     verifyNoInteractions(service);
   }
+
+  @Test
+  void pastPublicationDateReturnsBadRequest() throws Exception {
+    when(service.createBurgerOfTheDay(
+            "Spicy Burger", "Comes with spices", LocalDate.of(2026, 8, 9), "tester"))
+        .thenThrow(new PastPublicationDateException("Date: 2026-08-09 is in the past"));
+
+    mockMvc
+        .perform(
+            post("/burger-of-the-day")
+                .header("X-Username", "tester")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "text": "Spicy Burger",
+                      "commentary": "Comes with spices",
+                      "publish_date": "2026-08-09"
+                    }
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.error").value("Date: 2026-08-09 is in the past"));
+
+    verify(service)
+        .createBurgerOfTheDay(
+            "Spicy Burger", "Comes with spices", LocalDate.of(2026, 8, 9), "tester");
+  }
+
+  @Test
+  void invalidPublishDateReturnsBadRequest() throws Exception {
+    mockMvc
+        .perform(
+            post("/burger-of-the-day")
+                .header("X-Username", "tester")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "text": "Spicy Burger",
+                      "commentary": "Comes with spices",
+                      "publish_date": "2026-02-30"
+                    }
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.error").value("malformed request"));
+
+    verifyNoInteractions(service);
+  }
 }
