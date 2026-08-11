@@ -60,10 +60,11 @@ The repository currently contains a generated, minimal Spring Boot application:
 - Application name: `burger-of-the-day`
 - Local HTTP port: `8081`
 
-The create request DTO and its focused Jakarta Validation tests exist. The
-initial PostgreSQL Flyway migration, JPA entities, and Spring Data repositories
-for `app_user` and `burger_of_the_day` exist. No controller, service, or
-completed HTTP feature exists yet.
+The create request DTO, controller, service, PostgreSQL Flyway migration, JPA
+entities, and Spring Data repositories for `app_user` and
+`burger_of_the_day` exist. Their focused validation, web, service, and
+repository tests pass. The create feature still needs a full HTTP-to-database
+integration test before it is considered complete.
 
 ## Completed features
 
@@ -106,13 +107,20 @@ Repository setup completed so far:
 - Focused Mockito unit tests cover successful creation, unknown creators, and
   past publication dates. The successful path captures and verifies the entity
   sent to persistence using a fixed UTC clock.
+- The create controller implements request validation, temporary
+  `X-Username` identification, `201 Created` with a `Location` header, and
+  stable JSON errors for validation, authorization, past publication dates,
+  invalid dates, and malformed JSON. Seven focused MockMvc tests cover these
+  behaviors.
+- The full 20-test Maven verification passes against local PostgreSQL, including
+  Spotless enforcement and executable JAR packaging.
 - VS Code uses the same pinned google-java-format version as Spotless and loads
   the ignored local `.env` file when tests are launched from the editor.
 
 ## Next task
 
-Design and implement the HTTP controller for creating a Burger of the Day,
-including request validation, `X-Username`, `201 Created`, and `Location`.
+Add a full integration test for creating a Burger of the Day through HTTP and
+verifying the resulting PostgreSQL state.
 
 ## Important decisions
 
@@ -143,7 +151,6 @@ including request validation, `X-Username`, `201 Created`, and `Location`.
 
 ### Pending
 
-- Testing strategy for the first vertical slice
 - Deployment target
 
 Record future decisions here with enough context to explain why they were made.
