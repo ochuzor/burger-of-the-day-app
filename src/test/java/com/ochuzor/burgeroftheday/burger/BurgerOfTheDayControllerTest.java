@@ -174,4 +174,26 @@ class BurgerOfTheDayControllerTest {
 
     verifyNoInteractions(service);
   }
+
+  @Test
+  void malformedJsonReturnsBadRequest() throws Exception {
+    mockMvc
+        .perform(
+            post("/burger-of-the-day")
+                .header("X-Username", "tester")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "text": "Spicy Burger",
+                      "commentary": "Comes with spices",
+                      "publish_date": "2026-02-30"
+
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.error").value("malformed request"));
+
+    verifyNoInteractions(service);
+  }
 }
