@@ -3,6 +3,7 @@ package com.ochuzor.burgeroftheday.burger;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -195,5 +196,38 @@ class BurgerOfTheDayControllerTest {
         .andExpect(jsonPath("$.error").value("malformed request"));
 
     verifyNoInteractions(service);
+  }
+
+  @Test
+  void publishedBurgerCanBeRetrievedById() throws Exception {
+    when(service.getPublishedBurgerOfTheDay(42L))
+        .thenReturn(
+            new PublishedBurgerOfTheDayResponse(
+                42L, "Fancy Burger", "Comes with unit tests", LocalDate.of(2026, 8, 10), "tester"));
+
+    mockMvc
+        .perform(get("/burger-of-the-day/42").accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.id").value(42))
+        .andExpect(jsonPath("$.text").value("Fancy Burger"))
+        .andExpect(jsonPath("$.commentary").value("Comes with unit tests"))
+        .andExpect(jsonPath("$.publish_date").value("2026-08-10"))
+        .andExpect(jsonPath("$.created_by").value("tester"));
+
+    verify(service).getPublishedBurgerOfTheDay(42L);
+  }
+
+  @Test
+  void nonPublicBurgerReturnsNotFound() throws Exception {
+    when(service.getPublishedBurgerOfTheDay(42L)).thenThrow(new BurgerOfTheDayNotFoundException());
+
+    mockMvc
+        .perform(get("/burger-of-the-day/42").accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isNotFound())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.error").value("burger of the day not found"));
+
+    verify(service).getPublishedBurgerOfTheDay(42L);
   }
 }

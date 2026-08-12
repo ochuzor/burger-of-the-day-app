@@ -1,5 +1,6 @@
 package com.ochuzor.burgeroftheday.api;
 
+import com.ochuzor.burgeroftheday.burger.BurgerOfTheDayNotFoundException;
 import com.ochuzor.burgeroftheday.burger.PastPublicationDateException;
 import com.ochuzor.burgeroftheday.user.MissingUsernameException;
 import com.ochuzor.burgeroftheday.user.UnknownUserException;
@@ -41,5 +42,11 @@ public class ApiExceptionHandler {
   ResponseEntity<ApiErrorResponse> handleHttpMessageNotReadableException(
       HttpMessageNotReadableException exception) {
     return ResponseEntity.badRequest().body(new ApiErrorResponse("malformed request"));
+  }
+
+  @ExceptionHandler(BurgerOfTheDayNotFoundException.class)
+  ResponseEntity<ApiErrorResponse> handleBurgerOfTheDayNotFound() {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+        .body(new ApiErrorResponse("burger of the day not found"));
   }
 }

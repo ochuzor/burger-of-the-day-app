@@ -4,6 +4,8 @@ import com.ochuzor.burgeroftheday.user.MissingUsernameException;
 import jakarta.validation.Valid;
 import java.net.URI;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -36,5 +38,13 @@ public class BurgerOfTheDayController {
         ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(id).toUri();
 
     return ResponseEntity.created(location).build();
+  }
+
+  @GetMapping("/{id}")
+  ResponseEntity<PublishedBurgerOfTheDayResponse> getPublishedBurgerOfTheDay(
+      @PathVariable long id) {
+    PublishedBurgerOfTheDayResponse burger = this.service.getPublishedBurgerOfTheDay(id);
+
+    return ResponseEntity.ok(burger);
   }
 }

@@ -106,4 +106,59 @@ class BurgerOfTheDayServiceTest {
 
     verify(burgerOfTheDayRepository, never()).save(any(BurgerOfTheDay.class));
   }
+
+  @Test
+  void publishedBurgerCanBeRetrieved() {
+    User creator = new User("tester", "Tester");
+
+    BurgerOfTheDay savedBurger = mock(BurgerOfTheDay.class);
+    when(savedBurger.getId()).thenReturn(42L);
+    when(savedBurger.getCreator()).thenReturn(creator);
+    when(savedBurger.getText()).thenReturn("Fancy burger");
+    when(savedBurger.isHidden()).thenReturn(false);
+
+    LocalDate publishDate = LocalDate.of(2026, 8, 10);
+
+    when(savedBurger.getPublishDate()).thenReturn(publishDate);
+
+    when(burgerOfTheDayRepository.findById(42L)).thenReturn(Optional.of(savedBurger));
+
+    PublishedBurgerOfTheDayResponse response = service.getPublishedBurgerOfTheDay(42L);
+
+    assertThat(response.id()).isEqualTo(42L);
+    assertThat(response.text()).isEqualTo("Fancy burger");
+    assertThat(response.commentary()).isNull();
+    assertThat(response.publishDate()).isEqualTo(publishDate);
+    assertThat(response.createdBy()).isEqualTo("tester");
+  }
+
+  @Test
+  void missingBurgerIsReportedAsNotFound() {
+    when(burgerOfTheDayRepository.findById(42L)).thenReturn(Optional.empty());
+    assertThatThrownBy(() -> service.getPublishedBurgerOfTheDay(42L))
+        .isInstanceOf(BurgerOfTheDayNotFoundException.class);
+  }
+
+  @Test
+  void hiddenBurgerIsReportedAsNotFound() {
+    BurgerOfTheDay savedBurger = mock(BurgerOfTheDay.class);
+    when(savedBurger.isHidden()).thenReturn(true);
+
+    when(burgerOfTheDayRepository.findById(42L)).thenReturn(Optional.of(savedBurger));
+
+    assertThatThrownBy(() -> service.getPublishedBurgerOfTheDay(42L))
+        .isInstanceOf(BurgerOfTheDayNotFoundException.class);
+  }
+
+  @Test
+  void futureBurgerIsReportedAsNotFound() {
+    BurgerOfTheDay savedBurger = mock(BurgerOfTheDay.class);
+    when(savedBurger.isHidden()).thenReturn(false);
+    when(savedBurger.getPublishDate()).thenReturn(LocalDate.now(clock).plusDays(1));
+
+    when(burgerOfTheDayRepository.findById(42L)).thenReturn(Optional.of(savedBurger));
+
+    assertThatThrownBy(() -> service.getPublishedBurgerOfTheDay(42L))
+        .isInstanceOf(BurgerOfTheDayNotFoundException.class);
+  }
 }

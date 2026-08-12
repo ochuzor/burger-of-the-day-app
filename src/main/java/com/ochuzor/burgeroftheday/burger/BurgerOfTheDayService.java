@@ -43,4 +43,27 @@ public class BurgerOfTheDayService {
     BurgerOfTheDay savedBurgerOfTheDay = this.burgerOfTheDayRepository.save(burgerOfTheDay);
     return savedBurgerOfTheDay.getId();
   }
+
+  @Transactional(readOnly = true)
+  public PublishedBurgerOfTheDayResponse getPublishedBurgerOfTheDay(long id) {
+    BurgerOfTheDay burger =
+        this.burgerOfTheDayRepository
+            .findById(id)
+            .orElseThrow(() -> new BurgerOfTheDayNotFoundException());
+
+    LocalDate today = LocalDate.now(this.clock);
+    if (burger.isHidden() || burger.getPublishDate().isAfter(today)) {
+      throw new BurgerOfTheDayNotFoundException();
+    }
+
+    PublishedBurgerOfTheDayResponse responseBurger =
+        new PublishedBurgerOfTheDayResponse(
+            burger.getId(),
+            burger.getText(),
+            burger.getCommentary(),
+            burger.getPublishDate(),
+            burger.getCreator().getUsername());
+
+    return responseBurger;
+  }
 }
