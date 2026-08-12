@@ -69,7 +69,10 @@ and full HTTP-to-database integration tests pass.
 
 The first vertical product feature is complete: a known user can create a
 Burger of the Day for today or a future date through HTTP and receive its
-generated resource location.
+generated resource location. The second vertical feature is also complete:
+anyone can retrieve a visible, published Burger of the Day by that location,
+while missing, hidden, and future records are indistinguishable as `404 Not
+Found`.
 
 Repository setup completed so far:
 
@@ -118,13 +121,24 @@ Repository setup completed so far:
   clearing the persistence context. The full 21-test Maven verification passes
   against local PostgreSQL, including Spotless enforcement and executable JAR
   packaging.
+- Public `GET /burger-of-the-day/{id}` returns a response DTO containing the
+  burger ID, board text, optional commentary, publication date, and creator
+  username without requiring `X-Username`.
+- The public read service uses the application UTC clock and conceals missing,
+  hidden, and future burgers behind the same not-found exception and HTTP
+  response. Focused service and MockMvc tests cover the visibility boundary and
+  response contract.
+- PostgreSQL-backed integration tests verify successful public retrieval,
+  lazy creator loading with OSIV disabled, and concealment of an existing
+  future burger. The full 29-test Maven verification, Spotless check, and JAR
+  packaging pass.
 - VS Code uses the same pinned google-java-format version as Spotless and loads
   the ignored local `.env` file when tests are launched from the editor.
 
 ## Next task
 
-Design the public read-by-ID feature for published Burgers of the Day so that
-the `Location` returned by creation identifies a retrievable resource.
+Design public listing of visible, published Burgers of the Day by publication
+date as the next small vertical feature.
 
 ## Important decisions
 
