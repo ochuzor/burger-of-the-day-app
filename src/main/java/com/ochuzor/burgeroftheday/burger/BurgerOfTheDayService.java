@@ -6,6 +6,11 @@ import com.ochuzor.burgeroftheday.user.UserRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,5 +70,39 @@ public class BurgerOfTheDayService {
             burger.getCreator().getUsername());
 
     return responseBurger;
+  }
+
+  @Transactional(readOnly = true)
+  public PublishedBurgerOfTheDayPageResponse getBurgersOfTheDay(
+      Optional<LocalDate> publishDate, int page, int size) {
+    LocalDate today = LocalDate.now(this.clock);
+
+    Pageable pageable =
+        PageRequest.of(
+            page,
+            size,
+            Sort.by(
+                Sort.Order.desc("publishDate"),
+                Sort.Order.desc("createdAt"),
+                Sort.Order.desc("id")));
+    Page<BurgerOfTheDay> burgerPage =
+        burgerOfTheDayRepository.findByHiddenFalseAndPublishDateLessThanEqual(today, pageable);
+
+    Page<PublishedBurgerOfTheDayResponse> responsePage =
+        burgerPage.map(
+            burger ->
+                new PublishedBurgerOfTheDayResponse(
+                    burger.getId(),
+                    burger.getText(),
+                    burger.getCommentary(),
+                    burger.getPublishDate(),
+                    burger.getCreator().getUsername()));
+
+    return new PublishedBurgerOfTheDayPageResponse(
+        responsePage.getContent(),
+        responsePage.getNumber(),
+        responsePage.getSize(),
+        responsePage.getTotalElements(),
+        responsePage.getTotalPages());
   }
 }

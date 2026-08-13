@@ -131,4 +131,75 @@ class BurgerOfTheDayRepositoryTest {
     List<String> burgerTexts = page.getContent().stream().map(burger -> burger.getText()).toList();
     assertThat(burgerTexts).containsExactly("Burger#2", "Burger#1");
   }
+
+  @Test
+  void visiblePublishedBurgersCanBeFilteredByPublicationDate() {
+    burgerOfTheDayRepository.deleteAll();
+    userRepository.deleteAll();
+    entityManager.flush();
+
+    User user = this.userRepository.save(new User("tester", "Tester, M.D."));
+
+    burgerOfTheDayRepository.save(
+        new BurgerOfTheDay(
+            "Burger#1",
+            "burger 1",
+            Instant.parse("2026-08-10T12:00:00Z"),
+            LocalDate.of(2026, 8, 10),
+            user));
+    burgerOfTheDayRepository.save(
+        new BurgerOfTheDay(
+            "Burger#2",
+            "burger 2",
+            Instant.parse("2026-08-10T12:00:00Z"),
+            LocalDate.of(2026, 8, 11),
+            user));
+    burgerOfTheDayRepository.save(
+        new BurgerOfTheDay(
+            "Burger#3",
+            "burger 3",
+            Instant.parse("2026-08-10T12:00:00Z"),
+            LocalDate.of(2026, 8, 12),
+            user));
+
+    LocalDate requestedDate = LocalDate.of(2026, 8, 11);
+    LocalDate today = LocalDate.of(2026, 8, 13);
+
+    Page<BurgerOfTheDay> page =
+        this.burgerOfTheDayRepository
+            .findByHiddenFalseAndPublishDateEqualsAndPublishDateLessThanEqual(
+                requestedDate, today, PageRequest.of(0, 50));
+
+    assertThat(page.getTotalElements()).isEqualTo(1);
+    List<String> burgerTexts = page.getContent().stream().map(burger -> burger.getText()).toList();
+    assertThat(burgerTexts).containsExactly("Burger#2");
+  }
+
+  @Test
+  void futurePublicationDateReturnsEmptyPage() {
+    burgerOfTheDayRepository.deleteAll();
+    userRepository.deleteAll();
+    entityManager.flush();
+
+    User user = this.userRepository.save(new User("tester", "Tester, M.D."));
+
+    burgerOfTheDayRepository.save(
+        new BurgerOfTheDay(
+            "Burger#1",
+            "burger 1",
+            Instant.parse("2026-08-10T12:00:00Z"),
+            LocalDate.of(2099, 8, 11),
+            user));
+
+    LocalDate requestedDate = LocalDate.of(2099, 8, 11);
+    LocalDate today = LocalDate.of(2026, 8, 13);
+
+    Page<BurgerOfTheDay> page =
+        this.burgerOfTheDayRepository
+            .findByHiddenFalseAndPublishDateEqualsAndPublishDateLessThanEqual(
+                requestedDate, today, PageRequest.of(0, 50));
+
+    assertThat(page.getContent()).isEmpty();
+    assertThat(page.getTotalElements()).isZero();
+  }
 }

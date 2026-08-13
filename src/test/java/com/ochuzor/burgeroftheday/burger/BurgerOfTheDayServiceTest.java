@@ -15,6 +15,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 @ExtendWith(MockitoExtension.class)
 class BurgerOfTheDayServiceTest {
@@ -160,5 +165,63 @@ class BurgerOfTheDayServiceTest {
 
     assertThatThrownBy(() -> service.getPublishedBurgerOfTheDay(42L))
         .isInstanceOf(BurgerOfTheDayNotFoundException.class);
+  }
+
+  @Test
+  void publishedBurgersCanBeListed() {
+    User creator = new User("tester", "Tester");
+
+    BurgerOfTheDay burger1 = mock(BurgerOfTheDay.class);
+    when(burger1.getId()).thenReturn(41L);
+    when(burger1.getText()).thenReturn("First Burger");
+    when(burger1.getCommentary()).thenReturn("First commentary");
+    when(burger1.getPublishDate()).thenReturn(LocalDate.of(2026, 8, 9));
+    when(burger1.getCreator()).thenReturn(creator);
+
+    BurgerOfTheDay burger2 = mock(BurgerOfTheDay.class);
+    when(burger2.getId()).thenReturn(42L);
+    when(burger2.getText()).thenReturn("Second Burger");
+    when(burger2.getCommentary()).thenReturn(null);
+    when(burger2.getPublishDate()).thenReturn(LocalDate.of(2026, 8, 10));
+    when(burger2.getCreator()).thenReturn(creator);
+
+    List<BurgerOfTheDay> burgers = List.of(burger1, burger2);
+
+    Pageable pageable =
+        PageRequest.of(
+            0,
+            50,
+            Sort.by(
+                Sort.Order.desc("publishDate"),
+                Sort.Order.desc("createdAt"),
+                Sort.Order.desc("id")));
+
+    PageImpl<BurgerOfTheDay> repositoryPage = new PageImpl<>(burgers, pageable, 2);
+    LocalDate today = LocalDate.now(clock);
+    when(burgerOfTheDayRepository.findByHiddenFalseAndPublishDateLessThanEqual(today, pageable))
+        .thenReturn(repositoryPage);
+
+    PublishedBurgerOfTheDayPageResponse response =
+        service.getBurgersOfTheDay(Optional.empty(), 0, 50);
+
+    PublishedBurgerOfTheDayResponse first = response.content().get(0);
+    assertThat(first.id()).isEqualTo(41L);
+    assertThat(first.text()).isEqualTo("First Burger");
+    assertThat(first.commentary()).isEqualTo("First commentary");
+    assertThat(first.publishDate()).isEqualTo(LocalDate.of(2026, 8, 9));
+    assertThat(first.createdBy()).isEqualTo("tester");
+
+    PublishedBurgerOfTheDayResponse second = response.content().get(1);
+    assertThat(second.id()).isEqualTo(42L);
+    assertThat(second.text()).isEqualTo("Second Burger");
+    assertThat(second.commentary()).isNull();
+    assertThat(second.publishDate()).isEqualTo(LocalDate.of(2026, 8, 10));
+    assertThat(second.createdBy()).isEqualTo("tester");
+
+    assertThat(response.content()).hasSize(2);
+    assertThat(response.page()).isZero();
+    assertThat(response.size()).isEqualTo(50);
+    assertThat(response.totalElements()).isEqualTo(2);
+    assertThat(response.totalPages()).isEqualTo(1);
   }
 }
