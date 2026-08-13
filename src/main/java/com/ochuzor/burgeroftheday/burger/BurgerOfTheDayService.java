@@ -85,8 +85,16 @@ public class BurgerOfTheDayService {
                 Sort.Order.desc("publishDate"),
                 Sort.Order.desc("createdAt"),
                 Sort.Order.desc("id")));
-    Page<BurgerOfTheDay> burgerPage =
-        burgerOfTheDayRepository.findByHiddenFalseAndPublishDateLessThanEqual(today, pageable);
+
+    Page<BurgerOfTheDay> burgerPage;
+    if (publishDate.isEmpty()) {
+      burgerPage =
+          burgerOfTheDayRepository.findByHiddenFalseAndPublishDateLessThanEqual(today, pageable);
+    } else {
+      burgerPage =
+          burgerOfTheDayRepository.findByHiddenFalseAndPublishDateEqualsAndPublishDateLessThanEqual(
+              publishDate.get(), today, pageable);
+    }
 
     Page<PublishedBurgerOfTheDayResponse> responsePage =
         burgerPage.map(

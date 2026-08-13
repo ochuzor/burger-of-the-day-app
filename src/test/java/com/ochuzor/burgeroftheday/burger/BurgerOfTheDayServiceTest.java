@@ -224,4 +224,56 @@ class BurgerOfTheDayServiceTest {
     assertThat(response.totalElements()).isEqualTo(2);
     assertThat(response.totalPages()).isEqualTo(1);
   }
+
+  @Test
+  void publishedBurgersCanBeListedByPublicationDate() {
+    User creator = new User("tester", "Tester");
+
+    BurgerOfTheDay burger = mock(BurgerOfTheDay.class);
+    when(burger.getId()).thenReturn(41L);
+    when(burger.getText()).thenReturn("First Burger");
+    when(burger.getCommentary()).thenReturn("First commentary");
+    when(burger.getPublishDate()).thenReturn(LocalDate.of(2026, 8, 9));
+    when(burger.getCreator()).thenReturn(creator);
+
+    LocalDate requestedDate = LocalDate.of(2026, 8, 9);
+    LocalDate today = LocalDate.now(clock);
+
+    Pageable pageable =
+        PageRequest.of(
+            0,
+            50,
+            Sort.by(
+                Sort.Order.desc("publishDate"),
+                Sort.Order.desc("createdAt"),
+                Sort.Order.desc("id")));
+
+    PageImpl<BurgerOfTheDay> repositoryPage = new PageImpl<>(List.of(burger), pageable, 1);
+
+    when(burgerOfTheDayRepository.findByHiddenFalseAndPublishDateEqualsAndPublishDateLessThanEqual(
+            requestedDate, today, pageable))
+        .thenReturn(repositoryPage);
+
+    PublishedBurgerOfTheDayPageResponse response =
+        service.getBurgersOfTheDay(Optional.of(requestedDate), 0, 50);
+
+    PublishedBurgerOfTheDayResponse first = response.content().get(0);
+    assertThat(first.id()).isEqualTo(41L);
+    assertThat(first.text()).isEqualTo("First Burger");
+    assertThat(first.commentary()).isEqualTo("First commentary");
+    assertThat(first.publishDate()).isEqualTo(LocalDate.of(2026, 8, 9));
+    assertThat(first.createdBy()).isEqualTo("tester");
+
+    assertThat(response.content()).hasSize(1);
+    assertThat(response.page()).isZero();
+    assertThat(response.size()).isEqualTo(50);
+    assertThat(response.totalElements()).isEqualTo(1);
+    assertThat(response.totalPages()).isEqualTo(1);
+
+    verify(burgerOfTheDayRepository, never())
+        .findByHiddenFalseAndPublishDateLessThanEqual(any(), any());
+    verify(burgerOfTheDayRepository)
+        .findByHiddenFalseAndPublishDateEqualsAndPublishDateLessThanEqual(
+            requestedDate, today, pageable);
+  }
 }
