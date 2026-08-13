@@ -166,6 +166,15 @@ date as the next small vertical feature.
 - A future version may let creators add tags to their posts and let public
   users select a tag to browse related published Burger of the Day posts. Tags
   are explicitly excluded from the current MVP.
+- Public burger listing accepts an optional ISO 8601 `publish_date` filter. An
+  omitted date lists all visible, published burgers; a valid future date and a
+  date with no matches both produce an empty result.
+- Public listing is zero-based and paginated, defaults to 50 records, and
+  accepts at most 200 records per page. Its stable order is publication date
+  descending, creation timestamp descending, then ID descending.
+- The listing API returns an application-owned page response containing
+  `content`, `page`, `size`, `total_elements`, and `total_pages`, rather than
+  exposing Spring Data's `Page` serialization as the HTTP contract.
 
 ### Pending
 
