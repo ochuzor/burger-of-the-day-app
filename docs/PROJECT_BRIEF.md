@@ -3,8 +3,8 @@
 ## Product purpose
 
 Build a small Spring Boot API inspired by the "Burger of the Day" board from
-*Bob's Burgers*. Users submit short fictional burger-board ideas for today or
-a future date, and published ideas are publicly readable.
+*Bob's Burgers*. Users post short fictional burger-board ideas that become
+public immediately.
 
 This is both a usable application and a portfolio learning project. Its primary
 learning purpose is to apply the completed Java and Spring Boot curricula in a
@@ -21,12 +21,10 @@ explicitly not production authentication.
 
 ### Current scope
 
-- Create a Burger of the Day scheduled for today or a future date.
-- Let only its creator view and edit it before its publication date.
-- Make it public and immutable when its publication date arrives.
-- Let its creator hide and unhide it after publication.
+- Create and immediately publish an immutable Burger of the Day.
+- Let its creator hide and unhide it after posting.
 - List public burgers by creator and publication date.
-- Use one application-wide UTC business date.
+- Use UTC for publication timestamps and date-based filtering.
 
 ### Current exclusions
 
@@ -67,12 +65,9 @@ and full HTTP-to-database integration tests pass.
 
 ## Completed features
 
-The first vertical product feature is complete: a known user can create a
-Burger of the Day for today or a future date through HTTP and receive its
-generated resource location. The second vertical feature is also complete:
-anyone can retrieve a visible, published Burger of the Day by that location,
-while missing, hidden, and future records are indistinguishable as `404 Not
-Found`.
+The create and public-read features use the immediate-publication lifecycle. A
+successful create request publishes the burger immediately, and visible posts
+can be retrieved publicly by ID.
 
 Repository setup completed so far:
 
@@ -105,12 +100,12 @@ Repository setup completed so far:
   persisted burger fields, default visibility, and the creator relationship.
   Clearing the persistence context before retrieval ensures the assertions
   exercise actual database reads.
-- `BurgerOfTheDayService` implements creator lookup, UTC publication-date
-  validation, timestamp creation through an injected `Clock`, and transactional
+- `BurgerOfTheDayService` implements creator lookup, immediate publication
+  timestamp creation through an injected `Clock`, and transactional
   persistence. A production UTC `Clock` bean is configured.
-- Focused Mockito unit tests cover successful creation, unknown creators, and
-  past publication dates. The successful path captures and verifies the entity
-  sent to persistence using a fixed UTC clock.
+- Focused Mockito unit tests cover successful immediate publication and unknown
+  creators. The successful path captures and verifies the entity sent to
+  persistence using a fixed UTC clock.
 - The create controller implements request validation, temporary
   `X-Username` identification, `201 Created` with a `Location` header, and
   stable JSON errors for validation, authorization, past publication dates,
@@ -122,23 +117,23 @@ Repository setup completed so far:
   against local PostgreSQL, including Spotless enforcement and executable JAR
   packaging.
 - Public `GET /burger-of-the-day/{id}` returns a response DTO containing the
-  burger ID, board text, optional commentary, publication date, and creator
+  burger ID, board text, optional commentary, publication timestamp, and creator
   username without requiring `X-Username`.
-- The public read service uses the application UTC clock and conceals missing,
-  hidden, and future burgers behind the same not-found exception and HTTP
-  response. Focused service and MockMvc tests cover the visibility boundary and
-  response contract.
-- PostgreSQL-backed integration tests verify successful public retrieval,
-  lazy creator loading with OSIV disabled, and concealment of an existing
-  future burger. The full 29-test Maven verification, Spotless check, and JAR
-  packaging pass.
+- The public read service conceals missing and hidden burgers behind the same
+  not-found exception and HTTP response. Focused service and MockMvc tests cover
+  the visibility boundary and response contract.
+- Flyway migration V2 replaces `created_at` and `publish_date` with the required
+  `published_at` timestamp, preserving existing rows as published records.
+- PostgreSQL-backed integration tests verify immediate publication, successful
+  public retrieval, and lazy creator loading with OSIV disabled. The full
+  27-test Maven verification, Spotless check, and JAR packaging pass.
 - VS Code uses the same pinned google-java-format version as Spotless and loads
   the ignored local `.env` file when tests are launched from the editor.
 
 ## Next task
 
-Design public listing of visible, published Burgers of the Day by publication
-date as the next small vertical feature.
+Complete the paginated public listing HTTP endpoint, including optional UTC
+publication-date filtering and pagination validation.
 
 ## Important decisions
 
@@ -159,19 +154,24 @@ date as the next small vertical feature.
 - User IDs are UUIDs; Burger of the Day IDs are generated numeric IDs.
 - Burger board text is required, whitespace-preserving, and limited to 150
   characters. Optional commentary is limited to 500 characters.
-- Publication is derived from `publishDate` relative to UTC; no midnight
-  scheduler is required.
-- Published burgers are immutable. Their creators may hide and unhide them.
+- Creating a Burger of the Day publishes it immediately. There are no drafts,
+  scheduled posts, or separate publication action in the MVP.
+- `published_at` is the single creation/publication timestamp. The earlier
+  `created_at` and `publish_date` model is being retired through a new Flyway
+  migration rather than by editing the applied version 1 migration.
+- Posted burgers are immutable. Their creators may hide and unhide them;
+  unhiding preserves the original publication timestamp.
 - PostgreSQL schema changes are managed with versioned Flyway migrations.
 - A future version may let creators add tags to their posts and let public
   users select a tag to browse related published Burger of the Day posts. Tags
   are explicitly excluded from the current MVP.
-- Public burger listing accepts an optional ISO 8601 `publish_date` filter. An
-  omitted date lists all visible, published burgers; a valid future date and a
-  date with no matches both produce an empty result.
+- Public burger listing accepts an optional ISO 8601 `publish_date` filter. The
+  filter selects `published_at` values within that UTC calendar day. An omitted
+  date lists all visible burgers; a valid future date and a date with no matches
+  both produce an empty result.
 - Public listing is zero-based and paginated, defaults to 50 records, and
-  accepts at most 200 records per page. Its stable order is publication date
-  descending, creation timestamp descending, then ID descending.
+  accepts at most 200 records per page. Its stable order is publication
+  timestamp descending, then ID descending.
 - The listing API returns an application-owned page response containing
   `content`, `page`, `size`, `total_elements`, and `total_pages`, rather than
   exposing Spring Data's `Page` serialization as the HTTP contract.

@@ -31,9 +31,7 @@ public class BurgerOfTheDayController {
       throw new MissingUsernameException();
     }
 
-    Long id =
-        this.service.createBurgerOfTheDay(
-            request.text(), request.commentary(), request.publishDate(), username);
+    Long id = this.service.createBurgerOfTheDay(request.text(), request.commentary(), username);
     URI location =
         ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(id).toUri();
 

@@ -1,7 +1,6 @@
 package com.ochuzor.burgeroftheday.api;
 
 import com.ochuzor.burgeroftheday.burger.BurgerOfTheDayNotFoundException;
-import com.ochuzor.burgeroftheday.burger.PastPublicationDateException;
 import com.ochuzor.burgeroftheday.user.MissingUsernameException;
 import com.ochuzor.burgeroftheday.user.UnknownUserException;
 import org.springframework.http.HttpStatus;
@@ -30,12 +29,6 @@ public class ApiExceptionHandler {
             : "invalid request";
 
     return ResponseEntity.badRequest().body(new ApiErrorResponse(message));
-  }
-
-  @ExceptionHandler(PastPublicationDateException.class)
-  ResponseEntity<ApiErrorResponse> handlePastPublicationDateException(
-      PastPublicationDateException exception) {
-    return ResponseEntity.badRequest().body(new ApiErrorResponse(exception.getMessage()));
   }
 
   @ExceptionHandler(HttpMessageNotReadableException.class)

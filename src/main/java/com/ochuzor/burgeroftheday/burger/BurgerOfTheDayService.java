@@ -6,6 +6,7 @@ import com.ochuzor.burgeroftheday.user.UserRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -30,22 +31,16 @@ public class BurgerOfTheDayService {
   }
 
   @Transactional
-  public Long createBurgerOfTheDay(
-      String text, String commentary, LocalDate publishDate, String username) {
+  public Long createBurgerOfTheDay(String text, String commentary, String username) {
     User creator =
         this.userRepository
             .findByUsername(username)
             .orElseThrow(() -> new UnknownUserException("user not found"));
 
-    LocalDate today = LocalDate.now(this.clock);
-    if (publishDate.isBefore(today)) {
-      throw new PastPublicationDateException("Date: " + publishDate + " is in the past");
-    }
-
-    Instant createdAt = Instant.now(clock);
-    BurgerOfTheDay burgerOfTheDay =
-        new BurgerOfTheDay(text, commentary, createdAt, publishDate, creator);
+    Instant publishedAt = Instant.now(this.clock);
+    BurgerOfTheDay burgerOfTheDay = new BurgerOfTheDay(text, commentary, publishedAt, creator);
     BurgerOfTheDay savedBurgerOfTheDay = this.burgerOfTheDayRepository.save(burgerOfTheDay);
+
     return savedBurgerOfTheDay.getId();
   }
 
@@ -56,8 +51,7 @@ public class BurgerOfTheDayService {
             .findById(id)
             .orElseThrow(() -> new BurgerOfTheDayNotFoundException());
 
-    LocalDate today = LocalDate.now(this.clock);
-    if (burger.isHidden() || burger.getPublishDate().isAfter(today)) {
+    if (burger.isHidden()) {
       throw new BurgerOfTheDayNotFoundException();
     }
 
@@ -66,7 +60,7 @@ public class BurgerOfTheDayService {
             burger.getId(),
             burger.getText(),
             burger.getCommentary(),
-            burger.getPublishDate(),
+            burger.getPublishedAt(),
             burger.getCreator().getUsername());
 
     return responseBurger;
@@ -75,25 +69,21 @@ public class BurgerOfTheDayService {
   @Transactional(readOnly = true)
   public PublishedBurgerOfTheDayPageResponse getBurgersOfTheDay(
       Optional<LocalDate> publishDate, int page, int size) {
-    LocalDate today = LocalDate.now(this.clock);
 
     Pageable pageable =
-        PageRequest.of(
-            page,
-            size,
-            Sort.by(
-                Sort.Order.desc("publishDate"),
-                Sort.Order.desc("createdAt"),
-                Sort.Order.desc("id")));
+        PageRequest.of(page, size, Sort.by(Sort.Order.desc("publishedAt"), Sort.Order.desc("id")));
 
     Page<BurgerOfTheDay> burgerPage;
     if (publishDate.isEmpty()) {
-      burgerPage =
-          burgerOfTheDayRepository.findByHiddenFalseAndPublishDateLessThanEqual(today, pageable);
+      burgerPage = burgerOfTheDayRepository.findByHiddenFalse(pageable);
     } else {
+      Instant start = publishDate.get().atStartOfDay(ZoneOffset.UTC).toInstant();
+      Instant end = publishDate.get().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+
       burgerPage =
-          burgerOfTheDayRepository.findByHiddenFalseAndPublishDateEqualsAndPublishDateLessThanEqual(
-              publishDate.get(), today, pageable);
+          burgerOfTheDayRepository
+              .findByHiddenFalseAndPublishedAtGreaterThanEqualAndPublishedAtLessThan(
+                  start, end, pageable);
     }
 
     Page<PublishedBurgerOfTheDayResponse> responsePage =
@@ -103,7 +93,7 @@ public class BurgerOfTheDayService {
                     burger.getId(),
                     burger.getText(),
                     burger.getCommentary(),
-                    burger.getPublishDate(),
+                    burger.getPublishedAt(),
                     burger.getCreator().getUsername()));
 
     return new PublishedBurgerOfTheDayPageResponse(

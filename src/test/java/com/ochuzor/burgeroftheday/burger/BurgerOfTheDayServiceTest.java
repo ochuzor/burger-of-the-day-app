@@ -54,11 +54,8 @@ class BurgerOfTheDayServiceTest {
     when(savedBurger.getId()).thenReturn(42L);
     when(burgerOfTheDayRepository.save(any(BurgerOfTheDay.class))).thenReturn(savedBurger);
 
-    LocalDate publishDate = LocalDate.of(2026, 8, 10);
-
     // Act
-    Long id =
-        service.createBurgerOfTheDay("Spicy Burger", "Comes with spices", publishDate, "tester");
+    Long id = service.createBurgerOfTheDay("Spicy Burger", "Comes with spices", "tester");
 
     // Assert returned result
     assertThat(id).isEqualTo(42L);
@@ -73,8 +70,7 @@ class BurgerOfTheDayServiceTest {
     // Assert the constructed entity
     assertThat(burgerToSave.getText()).isEqualTo("Spicy Burger");
     assertThat(burgerToSave.getCommentary()).isEqualTo("Comes with spices");
-    assertThat(burgerToSave.getCreatedAt()).isEqualTo(Instant.parse("2026-08-10T12:00:00Z"));
-    assertThat(burgerToSave.getPublishDate()).isEqualTo(publishDate);
+    assertThat(burgerToSave.getPublishedAt()).isEqualTo(Instant.parse("2026-08-10T12:00:00Z"));
     assertThat(burgerToSave.isHidden()).isFalse();
     assertThat(burgerToSave.getCreator()).isSameAs(creator);
 
@@ -86,28 +82,9 @@ class BurgerOfTheDayServiceTest {
     when(userRepository.findByUsername("missing-user")).thenReturn(Optional.empty());
 
     assertThatThrownBy(
-            () ->
-                service.createBurgerOfTheDay(
-                    "Nothing burger", "a joke burger", LocalDate.now(clock), "missing-user"))
+            () -> service.createBurgerOfTheDay("Nothing burger", "a joke burger", "missing-user"))
         .isInstanceOf(UnknownUserException.class)
         .hasMessage("user not found");
-
-    verify(burgerOfTheDayRepository, never()).save(any(BurgerOfTheDay.class));
-  }
-
-  @Test
-  void pastPublicationDateIsRejected() {
-    User creator = new User("tester", "Tester");
-    when(userRepository.findByUsername("tester")).thenReturn(Optional.of(creator));
-
-    LocalDate publishDate = LocalDate.now(clock).minusDays(1);
-
-    assertThatThrownBy(
-            () ->
-                service.createBurgerOfTheDay(
-                    "Nothing burger", "a joke burger", publishDate, "tester"))
-        .isInstanceOf(PastPublicationDateException.class)
-        .hasMessage("Date: 2026-08-09 is in the past");
 
     verify(burgerOfTheDayRepository, never()).save(any(BurgerOfTheDay.class));
   }
@@ -122,9 +99,8 @@ class BurgerOfTheDayServiceTest {
     when(savedBurger.getText()).thenReturn("Fancy burger");
     when(savedBurger.isHidden()).thenReturn(false);
 
-    LocalDate publishDate = LocalDate.of(2026, 8, 10);
-
-    when(savedBurger.getPublishDate()).thenReturn(publishDate);
+    Instant publishedAt = Instant.parse("2026-08-10T12:00:00Z");
+    when(savedBurger.getPublishedAt()).thenReturn(publishedAt);
 
     when(burgerOfTheDayRepository.findById(42L)).thenReturn(Optional.of(savedBurger));
 
@@ -133,7 +109,7 @@ class BurgerOfTheDayServiceTest {
     assertThat(response.id()).isEqualTo(42L);
     assertThat(response.text()).isEqualTo("Fancy burger");
     assertThat(response.commentary()).isNull();
-    assertThat(response.publishDate()).isEqualTo(publishDate);
+    assertThat(response.publishedAt()).isEqualTo(publishedAt);
     assertThat(response.createdBy()).isEqualTo("tester");
   }
 
@@ -156,50 +132,34 @@ class BurgerOfTheDayServiceTest {
   }
 
   @Test
-  void futureBurgerIsReportedAsNotFound() {
-    BurgerOfTheDay savedBurger = mock(BurgerOfTheDay.class);
-    when(savedBurger.isHidden()).thenReturn(false);
-    when(savedBurger.getPublishDate()).thenReturn(LocalDate.now(clock).plusDays(1));
-
-    when(burgerOfTheDayRepository.findById(42L)).thenReturn(Optional.of(savedBurger));
-
-    assertThatThrownBy(() -> service.getPublishedBurgerOfTheDay(42L))
-        .isInstanceOf(BurgerOfTheDayNotFoundException.class);
-  }
-
-  @Test
   void publishedBurgersCanBeListed() {
     User creator = new User("tester", "Tester");
+
+    Instant firstPublishedAt = Instant.parse("2026-08-09T12:00:00Z");
 
     BurgerOfTheDay burger1 = mock(BurgerOfTheDay.class);
     when(burger1.getId()).thenReturn(41L);
     when(burger1.getText()).thenReturn("First Burger");
     when(burger1.getCommentary()).thenReturn("First commentary");
-    when(burger1.getPublishDate()).thenReturn(LocalDate.of(2026, 8, 9));
+    when(burger1.getPublishedAt()).thenReturn(firstPublishedAt);
     when(burger1.getCreator()).thenReturn(creator);
+
+    Instant secondPublishedAt = Instant.parse("2026-08-10T12:00:00Z");
 
     BurgerOfTheDay burger2 = mock(BurgerOfTheDay.class);
     when(burger2.getId()).thenReturn(42L);
     when(burger2.getText()).thenReturn("Second Burger");
     when(burger2.getCommentary()).thenReturn(null);
-    when(burger2.getPublishDate()).thenReturn(LocalDate.of(2026, 8, 10));
+    when(burger2.getPublishedAt()).thenReturn(secondPublishedAt);
     when(burger2.getCreator()).thenReturn(creator);
 
     List<BurgerOfTheDay> burgers = List.of(burger1, burger2);
 
     Pageable pageable =
-        PageRequest.of(
-            0,
-            50,
-            Sort.by(
-                Sort.Order.desc("publishDate"),
-                Sort.Order.desc("createdAt"),
-                Sort.Order.desc("id")));
+        PageRequest.of(0, 50, Sort.by(Sort.Order.desc("publishedAt"), Sort.Order.desc("id")));
 
     PageImpl<BurgerOfTheDay> repositoryPage = new PageImpl<>(burgers, pageable, 2);
-    LocalDate today = LocalDate.now(clock);
-    when(burgerOfTheDayRepository.findByHiddenFalseAndPublishDateLessThanEqual(today, pageable))
-        .thenReturn(repositoryPage);
+    when(burgerOfTheDayRepository.findByHiddenFalse(pageable)).thenReturn(repositoryPage);
 
     PublishedBurgerOfTheDayPageResponse response =
         service.getBurgersOfTheDay(Optional.empty(), 0, 50);
@@ -208,14 +168,14 @@ class BurgerOfTheDayServiceTest {
     assertThat(first.id()).isEqualTo(41L);
     assertThat(first.text()).isEqualTo("First Burger");
     assertThat(first.commentary()).isEqualTo("First commentary");
-    assertThat(first.publishDate()).isEqualTo(LocalDate.of(2026, 8, 9));
+    assertThat(first.publishedAt()).isEqualTo(firstPublishedAt);
     assertThat(first.createdBy()).isEqualTo("tester");
 
     PublishedBurgerOfTheDayResponse second = response.content().get(1);
     assertThat(second.id()).isEqualTo(42L);
     assertThat(second.text()).isEqualTo("Second Burger");
     assertThat(second.commentary()).isNull();
-    assertThat(second.publishDate()).isEqualTo(LocalDate.of(2026, 8, 10));
+    assertThat(second.publishedAt()).isEqualTo(secondPublishedAt);
     assertThat(second.createdBy()).isEqualTo("tester");
 
     assertThat(response.content()).hasSize(2);
@@ -233,25 +193,22 @@ class BurgerOfTheDayServiceTest {
     when(burger.getId()).thenReturn(41L);
     when(burger.getText()).thenReturn("First Burger");
     when(burger.getCommentary()).thenReturn("First commentary");
-    when(burger.getPublishDate()).thenReturn(LocalDate.of(2026, 8, 9));
+    when(burger.getPublishedAt()).thenReturn(Instant.parse("2026-08-09T12:00:00Z"));
     when(burger.getCreator()).thenReturn(creator);
 
     LocalDate requestedDate = LocalDate.of(2026, 8, 9);
-    LocalDate today = LocalDate.now(clock);
+
+    Instant start = requestedDate.atStartOfDay(ZoneOffset.UTC).toInstant();
+    Instant end = requestedDate.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
 
     Pageable pageable =
-        PageRequest.of(
-            0,
-            50,
-            Sort.by(
-                Sort.Order.desc("publishDate"),
-                Sort.Order.desc("createdAt"),
-                Sort.Order.desc("id")));
+        PageRequest.of(0, 50, Sort.by(Sort.Order.desc("publishedAt"), Sort.Order.desc("id")));
 
     PageImpl<BurgerOfTheDay> repositoryPage = new PageImpl<>(List.of(burger), pageable, 1);
 
-    when(burgerOfTheDayRepository.findByHiddenFalseAndPublishDateEqualsAndPublishDateLessThanEqual(
-            requestedDate, today, pageable))
+    when(burgerOfTheDayRepository
+            .findByHiddenFalseAndPublishedAtGreaterThanEqualAndPublishedAtLessThan(
+                start, end, pageable))
         .thenReturn(repositoryPage);
 
     PublishedBurgerOfTheDayPageResponse response =
@@ -261,7 +218,7 @@ class BurgerOfTheDayServiceTest {
     assertThat(first.id()).isEqualTo(41L);
     assertThat(first.text()).isEqualTo("First Burger");
     assertThat(first.commentary()).isEqualTo("First commentary");
-    assertThat(first.publishDate()).isEqualTo(LocalDate.of(2026, 8, 9));
+    assertThat(first.publishedAt()).isEqualTo(Instant.parse("2026-08-09T12:00:00Z"));
     assertThat(first.createdBy()).isEqualTo("tester");
 
     assertThat(response.content()).hasSize(1);
@@ -270,10 +227,9 @@ class BurgerOfTheDayServiceTest {
     assertThat(response.totalElements()).isEqualTo(1);
     assertThat(response.totalPages()).isEqualTo(1);
 
-    verify(burgerOfTheDayRepository, never())
-        .findByHiddenFalseAndPublishDateLessThanEqual(any(), any());
+    verify(burgerOfTheDayRepository, never()).findByHiddenFalse(any(Pageable.class));
     verify(burgerOfTheDayRepository)
-        .findByHiddenFalseAndPublishDateEqualsAndPublishDateLessThanEqual(
-            requestedDate, today, pageable);
+        .findByHiddenFalseAndPublishedAtGreaterThanEqualAndPublishedAtLessThan(
+            start, end, pageable);
   }
 }

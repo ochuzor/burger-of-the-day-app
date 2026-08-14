@@ -7,6 +7,7 @@ import com.ochuzor.burgeroftheday.user.UserRepository;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,11 +43,7 @@ class BurgerOfTheDayRepositoryTest {
 
     BurgerOfTheDay burgerOfTheDay =
         new BurgerOfTheDay(
-            "Spicy Burger",
-            "Comes with spices",
-            Instant.parse("2026-08-10T12:00:00Z"),
-            LocalDate.of(2026, 8, 11),
-            savedUser);
+            "Spicy Burger", "Comes with spices", Instant.parse("2026-08-10T12:00:00Z"), savedUser);
     BurgerOfTheDay savedBurgerOfTheDay = this.burgerOfTheDayRepository.save(burgerOfTheDay);
     assertThat(savedBurgerOfTheDay.getId()).isNotNull();
 
@@ -57,7 +54,8 @@ class BurgerOfTheDayRepositoryTest {
 
     assertThat(foundBurgerOfTheDay.getText()).isEqualTo("Spicy Burger");
     assertThat(foundBurgerOfTheDay.getCommentary()).isEqualTo("Comes with spices");
-    assertThat(foundBurgerOfTheDay.getPublishDate()).isEqualTo(LocalDate.of(2026, 8, 11));
+    assertThat(foundBurgerOfTheDay.getPublishedAt())
+        .isEqualTo(Instant.parse("2026-08-10T12:00:00Z"));
     assertThat(foundBurgerOfTheDay.isHidden()).isFalse();
     assertThat(foundBurgerOfTheDay.getCreator().getUsername()).isEqualTo("tester");
   }
@@ -72,35 +70,15 @@ class BurgerOfTheDayRepositoryTest {
 
     burgerOfTheDayRepository.save(
         new BurgerOfTheDay(
-            "Burger#1",
-            "Visible, published",
-            Instant.parse("2026-08-10T12:00:00Z"),
-            LocalDate.of(2026, 8, 11),
-            user));
+            "Burger#1", "Visible, published", Instant.parse("2026-08-10T12:00:00Z"), user));
     burgerOfTheDayRepository.save(
         new BurgerOfTheDay(
-            "Burger#2",
-            "Visible, published",
-            Instant.parse("2026-08-10T12:00:00Z"),
-            LocalDate.of(2026, 8, 11),
-            user));
+            "Burger#2", "Visible, published", Instant.parse("2026-08-10T12:00:00Z"), user));
 
     BurgerOfTheDay hiddenBurger =
         burgerOfTheDayRepository.save(
             new BurgerOfTheDay(
-                "Burger#3",
-                "Hidden, published",
-                Instant.parse("2026-08-10T12:00:00Z"),
-                LocalDate.of(2026, 8, 11),
-                user));
-
-    burgerOfTheDayRepository.save(
-        new BurgerOfTheDay(
-            "Burger#4",
-            "Visible, future",
-            Instant.parse("2026-08-10T12:00:00Z"),
-            LocalDate.of(2099, 8, 11),
-            user));
+                "Burger#3", "Hidden, published", Instant.parse("2026-08-10T12:00:00Z"), user));
 
     entityManager.flush();
 
@@ -112,19 +90,10 @@ class BurgerOfTheDayRepositoryTest {
 
     entityManager.clear();
 
-    LocalDate today = LocalDate.of(2026, 8, 13);
     PageRequest pageRequest =
-        PageRequest.of(
-            0,
-            50,
-            Sort.by(
-                Sort.Order.desc("publishDate"),
-                Sort.Order.desc("createdAt"),
-                Sort.Order.desc("id")));
+        PageRequest.of(0, 50, Sort.by(Sort.Order.desc("publishedAt"), Sort.Order.desc("id")));
 
-    Page<BurgerOfTheDay> page =
-        this.burgerOfTheDayRepository.findByHiddenFalseAndPublishDateLessThanEqual(
-            today, pageRequest);
+    Page<BurgerOfTheDay> page = this.burgerOfTheDayRepository.findByHiddenFalse(pageRequest);
 
     assertThat(page.getTotalElements()).isEqualTo(2);
 
@@ -141,65 +110,24 @@ class BurgerOfTheDayRepositoryTest {
     User user = this.userRepository.save(new User("tester", "Tester, M.D."));
 
     burgerOfTheDayRepository.save(
-        new BurgerOfTheDay(
-            "Burger#1",
-            "burger 1",
-            Instant.parse("2026-08-10T12:00:00Z"),
-            LocalDate.of(2026, 8, 10),
-            user));
+        new BurgerOfTheDay("Burger#1", "burger 1", Instant.parse("2026-08-10T12:00:00Z"), user));
     burgerOfTheDayRepository.save(
-        new BurgerOfTheDay(
-            "Burger#2",
-            "burger 2",
-            Instant.parse("2026-08-10T12:00:00Z"),
-            LocalDate.of(2026, 8, 11),
-            user));
+        new BurgerOfTheDay("Burger#2", "burger 2", Instant.parse("2026-08-11T12:00:00Z"), user));
     burgerOfTheDayRepository.save(
-        new BurgerOfTheDay(
-            "Burger#3",
-            "burger 3",
-            Instant.parse("2026-08-10T12:00:00Z"),
-            LocalDate.of(2026, 8, 12),
-            user));
+        new BurgerOfTheDay("Burger#3", "burger 3", Instant.parse("2026-08-12T12:00:00Z"), user));
 
     LocalDate requestedDate = LocalDate.of(2026, 8, 11);
-    LocalDate today = LocalDate.of(2026, 8, 13);
+
+    Instant start = requestedDate.atStartOfDay(ZoneOffset.UTC).toInstant();
+    Instant end = requestedDate.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
 
     Page<BurgerOfTheDay> page =
         this.burgerOfTheDayRepository
-            .findByHiddenFalseAndPublishDateEqualsAndPublishDateLessThanEqual(
-                requestedDate, today, PageRequest.of(0, 50));
+            .findByHiddenFalseAndPublishedAtGreaterThanEqualAndPublishedAtLessThan(
+                start, end, PageRequest.of(0, 50));
 
     assertThat(page.getTotalElements()).isEqualTo(1);
     List<String> burgerTexts = page.getContent().stream().map(burger -> burger.getText()).toList();
     assertThat(burgerTexts).containsExactly("Burger#2");
-  }
-
-  @Test
-  void futurePublicationDateReturnsEmptyPage() {
-    burgerOfTheDayRepository.deleteAll();
-    userRepository.deleteAll();
-    entityManager.flush();
-
-    User user = this.userRepository.save(new User("tester", "Tester, M.D."));
-
-    burgerOfTheDayRepository.save(
-        new BurgerOfTheDay(
-            "Burger#1",
-            "burger 1",
-            Instant.parse("2026-08-10T12:00:00Z"),
-            LocalDate.of(2099, 8, 11),
-            user));
-
-    LocalDate requestedDate = LocalDate.of(2099, 8, 11);
-    LocalDate today = LocalDate.of(2026, 8, 13);
-
-    Page<BurgerOfTheDay> page =
-        this.burgerOfTheDayRepository
-            .findByHiddenFalseAndPublishDateEqualsAndPublishDateLessThanEqual(
-                requestedDate, today, PageRequest.of(0, 50));
-
-    assertThat(page.getContent()).isEmpty();
-    assertThat(page.getTotalElements()).isZero();
   }
 }

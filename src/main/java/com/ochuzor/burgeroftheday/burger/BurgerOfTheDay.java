@@ -11,7 +11,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
-import java.time.LocalDate;
 
 @Entity
 @Table(name = "burger_of_the_day")
@@ -26,11 +25,8 @@ public class BurgerOfTheDay {
   @Column(name = "commentary", length = 500)
   private String commentary;
 
-  @Column(name = "created_at", nullable = false)
-  private Instant createdAt;
-
-  @Column(name = "publish_date", nullable = false)
-  private LocalDate publishDate;
+  @Column(name = "published_at", nullable = false)
+  private Instant publishedAt;
 
   @Column(name = "hidden", nullable = false)
   private boolean hidden;
@@ -41,12 +37,10 @@ public class BurgerOfTheDay {
 
   protected BurgerOfTheDay() {}
 
-  public BurgerOfTheDay(
-      String text, String commentary, Instant createdAt, LocalDate publishDate, User creator) {
+  public BurgerOfTheDay(String text, String commentary, Instant publishedAt, User creator) {
     this.text = text;
     this.commentary = commentary;
-    this.createdAt = createdAt;
-    this.publishDate = publishDate;
+    this.publishedAt = publishedAt;
     this.creator = creator;
 
     this.hidden = false;
@@ -64,12 +58,8 @@ public class BurgerOfTheDay {
     return this.commentary;
   }
 
-  public Instant getCreatedAt() {
-    return this.createdAt;
-  }
-
-  public LocalDate getPublishDate() {
-    return this.publishDate;
+  public Instant getPublishedAt() {
+    return this.publishedAt;
   }
 
   public User getCreator() {

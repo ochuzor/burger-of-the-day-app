@@ -11,7 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.ochuzor.burgeroftheday.user.UnknownUserException;
-import java.time.LocalDate;
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -29,8 +29,7 @@ class BurgerOfTheDayControllerTest {
 
   @Test
   void validRequestReturnsCreatedLocation() throws Exception {
-    when(service.createBurgerOfTheDay(
-            "Spicy Burger", "Comes with spices", LocalDate.of(2026, 8, 10), "tester"))
+    when(service.createBurgerOfTheDay("Spicy Burger", "Comes with spices", "tester"))
         .thenReturn(42L);
 
     mockMvc
@@ -42,17 +41,14 @@ class BurgerOfTheDayControllerTest {
                     """
                     {
                       "text": "Spicy Burger",
-                      "commentary": "Comes with spices",
-                      "publish_date": "2026-08-10"
+                      "commentary": "Comes with spices"
                     }
                     """))
         .andExpect(status().isCreated())
         .andExpect(header().string(HttpHeaders.LOCATION, "http://localhost/burger-of-the-day/42"))
         .andExpect(content().string(""));
 
-    verify(service)
-        .createBurgerOfTheDay(
-            "Spicy Burger", "Comes with spices", LocalDate.of(2026, 8, 10), "tester");
+    verify(service).createBurgerOfTheDay("Spicy Burger", "Comes with spices", "tester");
   }
 
   @Test
@@ -65,8 +61,7 @@ class BurgerOfTheDayControllerTest {
                     """
                     {
                       "text": "Spicy Burger",
-                      "commentary": "Comes with spices",
-                      "publish_date": "2026-08-10"
+                      "commentary": "Comes with spices"
                     }
                     """))
         .andExpect(status().isUnauthorized())
@@ -78,8 +73,7 @@ class BurgerOfTheDayControllerTest {
 
   @Test
   void unknownUsernameReturnsUnauthorized() throws Exception {
-    when(service.createBurgerOfTheDay(
-            "Spicy Burger", "Comes with spices", LocalDate.of(2026, 8, 10), "unknown"))
+    when(service.createBurgerOfTheDay("Spicy Burger", "Comes with spices", "unknown"))
         .thenThrow(new UnknownUserException("user not found"));
 
     mockMvc
@@ -91,17 +85,14 @@ class BurgerOfTheDayControllerTest {
                     """
                     {
                       "text": "Spicy Burger",
-                      "commentary": "Comes with spices",
-                      "publish_date": "2026-08-10"
+                      "commentary": "Comes with spices"
                     }
                     """))
         .andExpect(status().isUnauthorized())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.error").value("unauthorized"));
 
-    verify(service)
-        .createBurgerOfTheDay(
-            "Spicy Burger", "Comes with spices", LocalDate.of(2026, 8, 10), "unknown");
+    verify(service).createBurgerOfTheDay("Spicy Burger", "Comes with spices", "unknown");
   }
 
   @Test
@@ -115,63 +106,12 @@ class BurgerOfTheDayControllerTest {
                     """
                     {
                       "text": "     ",
-                      "commentary": "Comes with spices",
-                      "publish_date": "2026-08-10"
+                      "commentary": "Comes with spices"
                     }
                     """))
         .andExpect(status().isBadRequest())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.error").value("text should not be empty"));
-
-    verifyNoInteractions(service);
-  }
-
-  @Test
-  void pastPublicationDateReturnsBadRequest() throws Exception {
-    when(service.createBurgerOfTheDay(
-            "Spicy Burger", "Comes with spices", LocalDate.of(2026, 8, 9), "tester"))
-        .thenThrow(new PastPublicationDateException("Date: 2026-08-09 is in the past"));
-
-    mockMvc
-        .perform(
-            post("/burger-of-the-day")
-                .header("X-Username", "tester")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    """
-                    {
-                      "text": "Spicy Burger",
-                      "commentary": "Comes with spices",
-                      "publish_date": "2026-08-09"
-                    }
-                    """))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$.error").value("Date: 2026-08-09 is in the past"));
-
-    verify(service)
-        .createBurgerOfTheDay(
-            "Spicy Burger", "Comes with spices", LocalDate.of(2026, 8, 9), "tester");
-  }
-
-  @Test
-  void invalidPublishDateReturnsBadRequest() throws Exception {
-    mockMvc
-        .perform(
-            post("/burger-of-the-day")
-                .header("X-Username", "tester")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    """
-                    {
-                      "text": "Spicy Burger",
-                      "commentary": "Comes with spices",
-                      "publish_date": "2026-02-30"
-                    }
-                    """))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$.error").value("malformed request"));
 
     verifyNoInteractions(service);
   }
@@ -187,8 +127,7 @@ class BurgerOfTheDayControllerTest {
                     """
                     {
                       "text": "Spicy Burger",
-                      "commentary": "Comes with spices",
-                      "publish_date": "2026-02-30"
+                      "commentary": "Comes with spices"
 
                     """))
         .andExpect(status().isBadRequest())
@@ -203,7 +142,11 @@ class BurgerOfTheDayControllerTest {
     when(service.getPublishedBurgerOfTheDay(42L))
         .thenReturn(
             new PublishedBurgerOfTheDayResponse(
-                42L, "Fancy Burger", "Comes with unit tests", LocalDate.of(2026, 8, 10), "tester"));
+                42L,
+                "Fancy Burger",
+                "Comes with unit tests",
+                Instant.parse("2026-08-10T12:00:00Z"),
+                "tester"));
 
     mockMvc
         .perform(get("/burger-of-the-day/42").accept(MediaType.APPLICATION_JSON))
@@ -212,8 +155,8 @@ class BurgerOfTheDayControllerTest {
         .andExpect(jsonPath("$.id").value(42))
         .andExpect(jsonPath("$.text").value("Fancy Burger"))
         .andExpect(jsonPath("$.commentary").value("Comes with unit tests"))
-        .andExpect(jsonPath("$.publish_date").value("2026-08-10"))
-        .andExpect(jsonPath("$.created_by").value("tester"));
+        .andExpect(jsonPath("$.created_by").value("tester"))
+        .andExpect(jsonPath("$.published_at").value("2026-08-10T12:00:00Z"));
 
     verify(service).getPublishedBurgerOfTheDay(42L);
   }
