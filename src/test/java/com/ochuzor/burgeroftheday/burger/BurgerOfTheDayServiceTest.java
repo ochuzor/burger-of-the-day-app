@@ -3,9 +3,11 @@ package com.ochuzor.burgeroftheday.burger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.ochuzor.burgeroftheday.user.UnknownUserException;
@@ -17,6 +19,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -231,5 +234,66 @@ class BurgerOfTheDayServiceTest {
     verify(burgerOfTheDayRepository)
         .findByHiddenFalseAndPublishedAtGreaterThanEqualAndPublishedAtLessThan(
             start, end, pageable);
+  }
+
+  @Test
+  void creatorCanSetBurgerVisibility() {
+    User authenticatedUser = mock(User.class);
+    User creator = mock(User.class);
+
+    UUID userId = UUID.fromString("241cda9e-95be-40f8-968b-5bfe8da19cc3");
+
+    when(authenticatedUser.getId()).thenReturn(userId);
+    when(creator.getId()).thenReturn(userId);
+
+    when(userRepository.findByUsername("tester")).thenReturn(Optional.of(authenticatedUser));
+
+    BurgerOfTheDay burger = mock(BurgerOfTheDay.class);
+    when(burger.getCreator()).thenReturn(creator);
+
+    when(burgerOfTheDayRepository.findById(42L)).thenReturn(Optional.of(burger));
+
+    service.setBurgerOfTheDayVisibility(42L, "tester", true);
+
+    verify(burger).setHidden(true);
+    verify(burgerOfTheDayRepository, never()).save(any(BurgerOfTheDay.class));
+  }
+
+  @Test
+  void unknownUserCannotSetBurgerVisibility() {
+    when(userRepository.findByUsername("tester")).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> service.setBurgerOfTheDayVisibility(42L, "tester", true))
+        .isInstanceOf(UnknownUserException.class);
+    verifyNoInteractions(burgerOfTheDayRepository);
+  }
+
+  @Test
+  void missingBurgerVisibilityCannotBeChanged() {
+    User user = mock(User.class);
+    when(userRepository.findByUsername("tester")).thenReturn(Optional.of(user));
+
+    when(burgerOfTheDayRepository.findById(42L)).thenReturn(Optional.empty());
+    assertThatThrownBy(() -> service.setBurgerOfTheDayVisibility(42L, "tester", true))
+        .isInstanceOf(BurgerOfTheDayNotFoundException.class);
+  }
+
+  @Test
+  void nonCreatorCannotSetBurgerVisibility() {
+    User authenticatedUser = mock(User.class);
+    User creator = mock(User.class);
+    when(userRepository.findByUsername("tester")).thenReturn(Optional.of(authenticatedUser));
+
+    when(authenticatedUser.getId())
+        .thenReturn(UUID.fromString("241cda9e-95be-40f8-968b-5bfe8da19cc3"));
+    when(creator.getId()).thenReturn(UUID.fromString("e162dda0-6fa8-4698-95c3-821160644a36"));
+
+    BurgerOfTheDay burger = mock(BurgerOfTheDay.class);
+    when(burger.getCreator()).thenReturn(creator);
+    when(burgerOfTheDayRepository.findById(42L)).thenReturn(Optional.of(burger));
+
+    assertThatThrownBy(() -> service.setBurgerOfTheDayVisibility(42L, "tester", true))
+        .isInstanceOf(BurgerOfTheDayForbiddenException.class);
+    verify(burger, never()).setHidden(anyBoolean());
   }
 }

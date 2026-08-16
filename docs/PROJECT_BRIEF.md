@@ -108,9 +108,8 @@ Repository setup completed so far:
   persistence using a fixed UTC clock.
 - The create controller implements request validation, temporary
   `X-Username` identification, `201 Created` with a `Location` header, and
-  stable JSON errors for validation, authorization, past publication dates,
-  invalid dates, and malformed JSON. Seven focused MockMvc tests cover these
-  behaviors.
+  stable JSON errors for validation, authorization, and malformed JSON. Seven
+  focused MockMvc tests cover these behaviors.
 - A transactional `@SpringBootTest` sends a real create request through MockMvc
   and verifies the generated Burger of the Day through PostgreSQL after
   clearing the persistence context. The full 21-test Maven verification passes
@@ -126,6 +125,14 @@ Repository setup completed so far:
 - Focused controller tests cover default and custom pagination, date filtering,
   and invalid query parameters. A PostgreSQL-backed HTTP integration test
   verifies ordering, hidden-record exclusion, and pagination metadata.
+- Creator-only `PATCH /burger-of-the-day/{id}/visibility` hides or unhides an
+  existing burger and returns `204 No Content`. Missing or unknown users are
+  unauthorized, non-creators receive a stable forbidden response, and repeated
+  requests for the current state are idempotent.
+- Focused service and controller tests cover ownership, missing users and
+  burgers, request validation, and HTTP error mapping. A PostgreSQL-backed HTTP
+  integration test verifies the complete visible-to-hidden-to-visible lifecycle
+  and confirms that unhiding preserves the original publication timestamp.
 - The public read service conceals missing and hidden burgers behind the same
   not-found exception and HTTP response. Focused service and MockMvc tests cover
   the visibility boundary and response contract.
@@ -139,7 +146,7 @@ Repository setup completed so far:
 
 ## Next task
 
-Implement the creator-only hide/unhide endpoint as the next vertical slice.
+Add public listing by creator as the next vertical slice.
 
 ## Important decisions
 
@@ -167,6 +174,10 @@ Implement the creator-only hide/unhide endpoint as the next vertical slice.
   migration rather than by editing the applied version 1 migration.
 - Posted burgers are immutable. Their creators may hide and unhide them;
   unhiding preserves the original publication timestamp.
+- Visibility changes use `PATCH /burger-of-the-day/{id}/visibility` with a
+  required Boolean `hidden` field. Successful changes return `204 No Content`,
+  setting the current value is idempotent, and attempts by a different known
+  user return `403 Forbidden`.
 - PostgreSQL schema changes are managed with versioned Flyway migrations.
 - A future version may let creators add tags to their posts and let public
   users select a tag to browse related published Burger of the Day posts. Tags

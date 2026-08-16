@@ -1,5 +1,6 @@
 package com.ochuzor.burgeroftheday.api;
 
+import com.ochuzor.burgeroftheday.burger.BurgerOfTheDayForbiddenException;
 import com.ochuzor.burgeroftheday.burger.BurgerOfTheDayNotFoundException;
 import com.ochuzor.burgeroftheday.user.MissingUsernameException;
 import com.ochuzor.burgeroftheday.user.UnknownUserException;
@@ -62,5 +63,10 @@ public class ApiExceptionHandler {
   ResponseEntity<ApiErrorResponse> handleMethodValidation(
       HandlerMethodValidationException exception) {
     return ResponseEntity.badRequest().body(new ApiErrorResponse("invalid pagination"));
+  }
+
+  @ExceptionHandler(BurgerOfTheDayForbiddenException.class)
+  ResponseEntity<ApiErrorResponse> handleBurgerOfTheDayForbiddenException() {
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiErrorResponse("forbidden"));
   }
 }

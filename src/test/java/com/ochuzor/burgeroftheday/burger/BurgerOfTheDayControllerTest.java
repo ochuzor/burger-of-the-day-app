@@ -1,9 +1,11 @@
 package com.ochuzor.burgeroftheday.burger;
 
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -298,5 +300,77 @@ class BurgerOfTheDayControllerTest {
         .andExpect(jsonPath("$.error").value("invalid pagination"));
 
     verifyNoInteractions(service);
+  }
+
+  @Test
+  void creatorCanHideBurger() throws Exception {
+    mockMvc
+        .perform(
+            patch("/burger-of-the-day/42/visibility")
+                .header("X-Username", "tester")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"hidden":true}
+                    """))
+        .andExpect(status().isNoContent())
+        .andExpect(content().string(""));
+
+    verify(service).setBurgerOfTheDayVisibility(42L, "tester", true);
+  }
+
+  @Test
+  void missingUsernameCannotSetBurgerVisibility() throws Exception {
+    mockMvc
+        .perform(
+            patch("/burger-of-the-day/42/visibility")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"hidden":true}
+                    """))
+        .andExpect(status().isUnauthorized())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.error").value("unauthorized"));
+
+    verifyNoInteractions(service);
+  }
+
+  @Test
+  void missingHiddenReturnsBadRequest() throws Exception {
+    mockMvc
+        .perform(
+            patch("/burger-of-the-day/42/visibility")
+                .header("X-Username", "tester")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {}
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.error").value("hidden is required"));
+
+    verifyNoInteractions(service);
+  }
+
+  @Test
+  void nonCreatorCannotSetBurgerVisibility() throws Exception {
+    doThrow(new BurgerOfTheDayForbiddenException())
+        .when(service)
+        .setBurgerOfTheDayVisibility(42L, "intruder", true);
+
+    mockMvc
+        .perform(
+            patch("/burger-of-the-day/42/visibility")
+                .header("X-Username", "intruder")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"hidden":true}
+                    """))
+        .andExpect(status().isForbidden())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.error").value("forbidden"));
   }
 }

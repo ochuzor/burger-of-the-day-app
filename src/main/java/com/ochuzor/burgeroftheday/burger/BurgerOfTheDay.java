@@ -69,4 +69,8 @@ public class BurgerOfTheDay {
   public boolean isHidden() {
     return this.hidden;
   }
+
+  public void setHidden(boolean hidden) {
+    this.hidden = hidden;
+  }
 }

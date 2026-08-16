@@ -103,4 +103,23 @@ public class BurgerOfTheDayService {
         responsePage.getTotalElements(),
         responsePage.getTotalPages());
   }
+
+  @Transactional
+  public void setBurgerOfTheDayVisibility(long id, String username, boolean hidden) {
+    User authenticatedUser =
+        this.userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new UnknownUserException("user not found"));
+
+    BurgerOfTheDay burger =
+        this.burgerOfTheDayRepository
+            .findById(id)
+            .orElseThrow(() -> new BurgerOfTheDayNotFoundException());
+
+    if (!authenticatedUser.getId().equals(burger.getCreator().getId())) {
+      throw new BurgerOfTheDayForbiddenException();
+    }
+
+    burger.setHidden(hidden);
+  }
 }
