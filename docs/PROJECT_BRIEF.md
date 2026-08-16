@@ -119,6 +119,13 @@ Repository setup completed so far:
 - Public `GET /burger-of-the-day/{id}` returns a response DTO containing the
   burger ID, board text, optional commentary, publication timestamp, and creator
   username without requiring `X-Username`.
+- Public `GET /burger-of-the-day` returns visible burgers in a stable,
+  newest-first paginated response. It supports optional UTC calendar-date
+  filtering through `publish_date`, validates page and size bounds, and returns
+  stable JSON errors for malformed dates and pagination parameters.
+- Focused controller tests cover default and custom pagination, date filtering,
+  and invalid query parameters. A PostgreSQL-backed HTTP integration test
+  verifies ordering, hidden-record exclusion, and pagination metadata.
 - The public read service conceals missing and hidden burgers behind the same
   not-found exception and HTTP response. Focused service and MockMvc tests cover
   the visibility boundary and response contract.
@@ -132,8 +139,7 @@ Repository setup completed so far:
 
 ## Next task
 
-Complete the paginated public listing HTTP endpoint, including optional UTC
-publication-date filtering and pagination validation.
+Implement the creator-only hide/unhide endpoint as the next vertical slice.
 
 ## Important decisions
 
