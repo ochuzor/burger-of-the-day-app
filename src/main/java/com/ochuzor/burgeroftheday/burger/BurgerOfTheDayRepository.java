@@ -11,4 +11,10 @@ public interface BurgerOfTheDayRepository extends JpaRepository<BurgerOfTheDay, 
 
   Page<BurgerOfTheDay> findByHiddenFalseAndPublishedAtGreaterThanEqualAndPublishedAtLessThan(
       Instant start, Instant end, Pageable pageable);
+
+  Page<BurgerOfTheDay> findByHiddenFalseAndCreatorUsername(String username, Pageable pageable);
+
+  Page<BurgerOfTheDay>
+      findByHiddenFalseAndCreatorUsernameAndPublishedAtGreaterThanEqualAndPublishedAtLessThan(
+          String username, Instant start, Instant end, Pageable pageable);
 }

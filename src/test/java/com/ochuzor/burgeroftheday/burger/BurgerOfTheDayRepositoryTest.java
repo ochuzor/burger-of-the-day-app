@@ -130,4 +130,76 @@ class BurgerOfTheDayRepositoryTest {
     List<String> burgerTexts = page.getContent().stream().map(burger -> burger.getText()).toList();
     assertThat(burgerTexts).containsExactly("Burger#2");
   }
+
+  @Test
+  void visibleBurgersCanBeFilteredByCreator() {
+    burgerOfTheDayRepository.deleteAll();
+    userRepository.deleteAll();
+    entityManager.flush();
+
+    User alice = this.userRepository.save(new User("alice", "Tester, Alice"));
+    User bob = this.userRepository.save(new User("bob", "Tester, Bob"));
+
+    burgerOfTheDayRepository.save(
+        new BurgerOfTheDay(
+            "Alice's Burger#1", "Alice's burger 1", Instant.parse("2026-08-10T12:00:00Z"), alice));
+    burgerOfTheDayRepository.save(
+        new BurgerOfTheDay(
+            "Alice's Burger#2", "Alice's burger 2", Instant.parse("2026-08-11T12:00:00Z"), alice));
+    burgerOfTheDayRepository.save(
+        new BurgerOfTheDay(
+            "Bob's Burger", "Bob's burger :D", Instant.parse("2026-08-11T12:00:00Z"), bob));
+
+    PageRequest pageRequest =
+        PageRequest.of(0, 50, Sort.by(Sort.Order.desc("publishedAt"), Sort.Order.desc("id")));
+
+    entityManager.flush();
+    entityManager.clear();
+
+    Page<BurgerOfTheDay> page =
+        this.burgerOfTheDayRepository.findByHiddenFalseAndCreatorUsername("alice", pageRequest);
+
+    assertThat(page.getTotalElements()).isEqualTo(2);
+    List<String> burgerTexts = page.getContent().stream().map(burger -> burger.getText()).toList();
+    assertThat(burgerTexts).containsExactly("Alice's Burger#2", "Alice's Burger#1");
+  }
+
+  @Test
+  void visibleBurgersCanBeFilteredByCreatorAndPublicationDate() {
+    burgerOfTheDayRepository.deleteAll();
+    userRepository.deleteAll();
+    entityManager.flush();
+
+    User alice = this.userRepository.save(new User("alice", "Tester, Alice"));
+    User bob = this.userRepository.save(new User("bob", "Tester, Bob"));
+
+    burgerOfTheDayRepository.save(
+        new BurgerOfTheDay(
+            "Alice's Burger#1", "Alice's burger 1", Instant.parse("2026-08-10T12:00:00Z"), alice));
+    burgerOfTheDayRepository.save(
+        new BurgerOfTheDay(
+            "Alice's Burger#2", "Alice's burger 2", Instant.parse("2026-08-11T12:00:00Z"), alice));
+    burgerOfTheDayRepository.save(
+        new BurgerOfTheDay(
+            "Bob's Burger", "Bob's burger :D", Instant.parse("2026-08-11T12:00:00Z"), bob));
+
+    entityManager.flush();
+    entityManager.clear();
+
+    PageRequest pageRequest =
+        PageRequest.of(0, 50, Sort.by(Sort.Order.desc("publishedAt"), Sort.Order.desc("id")));
+
+    LocalDate requestedDate = LocalDate.of(2026, 8, 11);
+    Instant start = requestedDate.atStartOfDay(ZoneOffset.UTC).toInstant();
+    Instant end = requestedDate.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+
+    Page<BurgerOfTheDay> page =
+        this.burgerOfTheDayRepository
+            .findByHiddenFalseAndCreatorUsernameAndPublishedAtGreaterThanEqualAndPublishedAtLessThan(
+                "alice", start, end, pageRequest);
+
+    assertThat(page.getTotalElements()).isEqualTo(1);
+    List<String> burgerTexts = page.getContent().stream().map(burger -> burger.getText()).toList();
+    assertThat(burgerTexts).containsExactly("Alice's Burger#2");
+  }
 }

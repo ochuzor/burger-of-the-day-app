@@ -165,7 +165,7 @@ class BurgerOfTheDayServiceTest {
     when(burgerOfTheDayRepository.findByHiddenFalse(pageable)).thenReturn(repositoryPage);
 
     PublishedBurgerOfTheDayPageResponse response =
-        service.getBurgersOfTheDay(Optional.empty(), 0, 50);
+        service.getBurgersOfTheDay(Optional.empty(), Optional.empty(), 0, 50);
 
     PublishedBurgerOfTheDayResponse first = response.content().get(0);
     assertThat(first.id()).isEqualTo(41L);
@@ -215,7 +215,7 @@ class BurgerOfTheDayServiceTest {
         .thenReturn(repositoryPage);
 
     PublishedBurgerOfTheDayPageResponse response =
-        service.getBurgersOfTheDay(Optional.of(requestedDate), 0, 50);
+        service.getBurgersOfTheDay(Optional.of(requestedDate), Optional.empty(), 0, 50);
 
     PublishedBurgerOfTheDayResponse first = response.content().get(0);
     assertThat(first.id()).isEqualTo(41L);
@@ -295,5 +295,39 @@ class BurgerOfTheDayServiceTest {
     assertThatThrownBy(() -> service.setBurgerOfTheDayVisibility(42L, "tester", true))
         .isInstanceOf(BurgerOfTheDayForbiddenException.class);
     verify(burger, never()).setHidden(anyBoolean());
+  }
+
+  @Test
+  void publishedBurgersCanBeListedByCreator() {
+    User creator = mock(User.class);
+    when(creator.getUsername()).thenReturn("tester");
+    Instant publishedAt = Instant.parse("2026-08-09T12:00:00Z");
+
+    BurgerOfTheDay burger = mock(BurgerOfTheDay.class);
+    when(burger.getCreator()).thenReturn(creator);
+    when(burger.getId()).thenReturn(42L);
+    when(burger.getText()).thenReturn("burger text");
+    when(burger.getPublishedAt()).thenReturn(publishedAt);
+    when(burger.getCommentary()).thenReturn("burger commentary");
+
+    Pageable pageable =
+        PageRequest.of(0, 50, Sort.by(Sort.Order.desc("publishedAt"), Sort.Order.desc("id")));
+    PageImpl<BurgerOfTheDay> repositoryPage = new PageImpl<>(List.of(burger), pageable, 1);
+
+    when(burgerOfTheDayRepository.findByHiddenFalseAndCreatorUsername("tester", pageable))
+        .thenReturn(repositoryPage);
+
+    PublishedBurgerOfTheDayPageResponse response =
+        service.getBurgersOfTheDay(Optional.empty(), Optional.of("tester"), 0, 50);
+
+    PublishedBurgerOfTheDayResponse first = response.content().get(0);
+    assertThat(first.id()).isEqualTo(42L);
+    assertThat(first.text()).isEqualTo("burger text");
+    assertThat(first.commentary()).isEqualTo("burger commentary");
+    assertThat(first.publishedAt()).isEqualTo(publishedAt);
+    assertThat(first.createdBy()).isEqualTo("tester");
+
+    verify(burgerOfTheDayRepository, never()).findByHiddenFalse(any(Pageable.class));
+    verify(burgerOfTheDayRepository).findByHiddenFalseAndCreatorUsername("tester", pageable);
   }
 }

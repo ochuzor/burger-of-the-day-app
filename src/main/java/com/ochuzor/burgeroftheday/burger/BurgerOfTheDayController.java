@@ -62,7 +62,8 @@ public class BurgerOfTheDayController {
       @RequestParam(defaultValue = "50") @Min(1) @Max(200) int size) {
 
     PublishedBurgerOfTheDayPageResponse response =
-        this.service.getBurgersOfTheDay(Optional.ofNullable(publishDate), page, size);
+        this.service.getBurgersOfTheDay(
+            Optional.ofNullable(publishDate), Optional.empty(), page, size);
 
     return ResponseEntity.ok(response);
   }

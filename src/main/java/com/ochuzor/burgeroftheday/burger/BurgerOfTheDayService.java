@@ -68,14 +68,17 @@ public class BurgerOfTheDayService {
 
   @Transactional(readOnly = true)
   public PublishedBurgerOfTheDayPageResponse getBurgersOfTheDay(
-      Optional<LocalDate> publishDate, int page, int size) {
+      Optional<LocalDate> publishDate, Optional<String> createdBy, int page, int size) {
 
     Pageable pageable =
         PageRequest.of(page, size, Sort.by(Sort.Order.desc("publishedAt"), Sort.Order.desc("id")));
 
     Page<BurgerOfTheDay> burgerPage;
-    if (publishDate.isEmpty()) {
+    if (publishDate.isEmpty() && createdBy.isEmpty()) {
       burgerPage = burgerOfTheDayRepository.findByHiddenFalse(pageable);
+    } else if (publishDate.isEmpty()) {
+      burgerPage =
+          burgerOfTheDayRepository.findByHiddenFalseAndCreatorUsername(createdBy.get(), pageable);
     } else {
       Instant start = publishDate.get().atStartOfDay(ZoneOffset.UTC).toInstant();
       Instant end = publishDate.get().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();

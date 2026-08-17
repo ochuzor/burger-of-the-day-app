@@ -189,7 +189,7 @@ class BurgerOfTheDayControllerTest {
             Instant.parse("2026-08-14T12:00:00Z"),
             "tester");
 
-    when(service.getBurgersOfTheDay(Optional.empty(), 0, 50))
+    when(service.getBurgersOfTheDay(Optional.empty(), Optional.empty(), 0, 50))
         .thenReturn(new PublishedBurgerOfTheDayPageResponse(List.of(burger), 0, 50, 1, 1));
 
     mockMvc
@@ -206,7 +206,7 @@ class BurgerOfTheDayControllerTest {
         .andExpect(jsonPath("$.total_elements").value(1))
         .andExpect(jsonPath("$.total_pages").value(1));
 
-    verify(service).getBurgersOfTheDay(Optional.empty(), 0, 50);
+    verify(service).getBurgersOfTheDay(Optional.empty(), Optional.empty(), 0, 50);
   }
 
   @Test
@@ -220,7 +220,7 @@ class BurgerOfTheDayControllerTest {
             "tester");
 
     LocalDate requestedDate = LocalDate.of(2026, 8, 14);
-    when(service.getBurgersOfTheDay(Optional.of(requestedDate), 2, 25))
+    when(service.getBurgersOfTheDay(Optional.of(requestedDate), Optional.empty(), 2, 25))
         .thenReturn(new PublishedBurgerOfTheDayPageResponse(List.of(burger), 2, 25, 51, 3));
 
     mockMvc
