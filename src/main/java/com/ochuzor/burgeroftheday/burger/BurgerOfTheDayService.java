@@ -74,19 +74,33 @@ public class BurgerOfTheDayService {
         PageRequest.of(page, size, Sort.by(Sort.Order.desc("publishedAt"), Sort.Order.desc("id")));
 
     Page<BurgerOfTheDay> burgerPage;
-    if (publishDate.isEmpty() && createdBy.isEmpty()) {
-      burgerPage = burgerOfTheDayRepository.findByHiddenFalse(pageable);
-    } else if (publishDate.isEmpty()) {
-      burgerPage =
-          burgerOfTheDayRepository.findByHiddenFalseAndCreatorUsername(createdBy.get(), pageable);
+    if (publishDate.isEmpty()) {
+      if (createdBy.isEmpty()) {
+        // unfiltered
+        burgerPage = burgerOfTheDayRepository.findByHiddenFalse(pageable);
+      } else {
+        // creator only
+        burgerPage =
+            burgerOfTheDayRepository.findByHiddenFalseAndCreatorUsername(createdBy.get(), pageable);
+      }
     } else {
+      // Compute UTC start and end once.
       Instant start = publishDate.get().atStartOfDay(ZoneOffset.UTC).toInstant();
       Instant end = publishDate.get().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
 
-      burgerPage =
-          burgerOfTheDayRepository
-              .findByHiddenFalseAndPublishedAtGreaterThanEqualAndPublishedAtLessThan(
-                  start, end, pageable);
+      if (createdBy.isEmpty()) {
+        // date only
+        burgerPage =
+            burgerOfTheDayRepository
+                .findByHiddenFalseAndPublishedAtGreaterThanEqualAndPublishedAtLessThan(
+                    start, end, pageable);
+      } else {
+        // creator and date
+        burgerPage =
+            burgerOfTheDayRepository
+                .findByHiddenFalseAndCreatorUsernameAndPublishedAtGreaterThanEqualAndPublishedAtLessThan(
+                    createdBy.get(), start, end, pageable);
+      }
     }
 
     Page<PublishedBurgerOfTheDayResponse> responsePage =

@@ -122,6 +122,12 @@ Repository setup completed so far:
   newest-first paginated response. It supports optional UTC calendar-date
   filtering through `publish_date`, validates page and size bounds, and returns
   stable JSON errors for malformed dates and pagination parameters.
+- Public burger listing supports optional creator filtering through `created_by`
+  and permits combining creator and UTC publication-date filters. Repository,
+  service, controller, and PostgreSQL-backed HTTP tests verify that hidden posts
+  and posts belonging to other creators are excluded. Blank creator filters
+  produce a stable bad-request response. The full 52-test Maven verification,
+  Spotless check, and executable JAR packaging pass.
 - Focused controller tests cover default and custom pagination, date filtering,
   and invalid query parameters. A PostgreSQL-backed HTTP integration test
   verifies ordering, hidden-record exclusion, and pagination metadata.
@@ -146,7 +152,8 @@ Repository setup completed so far:
 
 ## Next task
 
-Add public listing by creator as the next vertical slice.
+Add an authenticated creator-management listing so creators can find all their
+own posts, including hidden posts that they may want to unhide.
 
 ## Important decisions
 
@@ -196,5 +203,7 @@ Add public listing by creator as the next vertical slice.
 ### Pending
 
 - Deployment target
+- Production identity provider; Supabase Auth and Supabase PostgreSQL are under
+  consideration, but the discussion is currently paused.
 
 Record future decisions here with enough context to explain why they were made.

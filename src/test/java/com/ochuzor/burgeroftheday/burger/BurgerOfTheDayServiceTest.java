@@ -330,4 +330,55 @@ class BurgerOfTheDayServiceTest {
     verify(burgerOfTheDayRepository, never()).findByHiddenFalse(any(Pageable.class));
     verify(burgerOfTheDayRepository).findByHiddenFalseAndCreatorUsername("tester", pageable);
   }
+
+  @Test
+  void publishedBurgersCanBeListedByCreatorAndPublicationDate() {
+    User creator = new User("tester", "Tester");
+
+    BurgerOfTheDay burger = mock(BurgerOfTheDay.class);
+    when(burger.getId()).thenReturn(41L);
+    when(burger.getText()).thenReturn("First Burger");
+    when(burger.getCommentary()).thenReturn("First commentary");
+    when(burger.getPublishedAt()).thenReturn(Instant.parse("2026-08-09T12:00:00Z"));
+    when(burger.getCreator()).thenReturn(creator);
+
+    LocalDate requestedDate = LocalDate.of(2026, 8, 9);
+
+    Instant start = requestedDate.atStartOfDay(ZoneOffset.UTC).toInstant();
+    Instant end = requestedDate.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+
+    Pageable pageable =
+        PageRequest.of(0, 50, Sort.by(Sort.Order.desc("publishedAt"), Sort.Order.desc("id")));
+
+    PageImpl<BurgerOfTheDay> repositoryPage = new PageImpl<>(List.of(burger), pageable, 1);
+
+    when(burgerOfTheDayRepository
+            .findByHiddenFalseAndCreatorUsernameAndPublishedAtGreaterThanEqualAndPublishedAtLessThan(
+                "tester", start, end, pageable))
+        .thenReturn(repositoryPage);
+
+    PublishedBurgerOfTheDayPageResponse response =
+        service.getBurgersOfTheDay(Optional.of(requestedDate), Optional.of("tester"), 0, 50);
+
+    PublishedBurgerOfTheDayResponse first = response.content().get(0);
+    assertThat(first.id()).isEqualTo(41L);
+    assertThat(first.text()).isEqualTo("First Burger");
+    assertThat(first.commentary()).isEqualTo("First commentary");
+    assertThat(first.publishedAt()).isEqualTo(Instant.parse("2026-08-09T12:00:00Z"));
+    assertThat(first.createdBy()).isEqualTo("tester");
+
+    assertThat(response.content()).hasSize(1);
+    assertThat(response.page()).isZero();
+    assertThat(response.size()).isEqualTo(50);
+    assertThat(response.totalElements()).isEqualTo(1);
+    assertThat(response.totalPages()).isEqualTo(1);
+
+    verify(burgerOfTheDayRepository)
+        .findByHiddenFalseAndCreatorUsernameAndPublishedAtGreaterThanEqualAndPublishedAtLessThan(
+            "tester", start, end, pageable);
+    verify(burgerOfTheDayRepository, never()).findByHiddenFalse(any(Pageable.class));
+    verify(burgerOfTheDayRepository, never())
+        .findByHiddenFalseAndPublishedAtGreaterThanEqualAndPublishedAtLessThan(
+            start, end, pageable);
+  }
 }

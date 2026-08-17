@@ -373,4 +373,85 @@ class BurgerOfTheDayControllerTest {
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.error").value("forbidden"));
   }
+
+  @Test
+  void publishedBurgersCanBeFilteredByCreator() throws Exception {
+    PublishedBurgerOfTheDayResponse burger =
+        new PublishedBurgerOfTheDayResponse(
+            42L,
+            "Fancy Burger",
+            "Comes with integration tests",
+            Instant.parse("2026-08-14T12:00:00Z"),
+            "tester");
+
+    when(service.getBurgersOfTheDay(Optional.empty(), Optional.of("tester"), 0, 50))
+        .thenReturn(new PublishedBurgerOfTheDayPageResponse(List.of(burger), 0, 50, 1, 1));
+
+    mockMvc
+        .perform(
+            get("/burger-of-the-day")
+                .param("created_by", "tester")
+                .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.content[0].id").value(42))
+        .andExpect(jsonPath("$.content[0].text").value("Fancy Burger"))
+        .andExpect(jsonPath("$.content[0].commentary").value("Comes with integration tests"))
+        .andExpect(jsonPath("$.content[0].published_at").value("2026-08-14T12:00:00Z"))
+        .andExpect(jsonPath("$.content[0].created_by").value("tester"))
+        .andExpect(jsonPath("$.page").value(0))
+        .andExpect(jsonPath("$.size").value(50))
+        .andExpect(jsonPath("$.total_elements").value(1))
+        .andExpect(jsonPath("$.total_pages").value(1));
+
+    verify(service).getBurgersOfTheDay(Optional.empty(), Optional.of("tester"), 0, 50);
+  }
+
+  @Test
+  void publishedBurgersCanBeFilteredByCreatorAndDate() throws Exception {
+    PublishedBurgerOfTheDayResponse burger =
+        new PublishedBurgerOfTheDayResponse(
+            42L,
+            "Fancy Burger",
+            "Comes with integration tests",
+            Instant.parse("2026-08-14T12:00:00Z"),
+            "tester");
+
+    when(service.getBurgersOfTheDay(
+            Optional.of(LocalDate.of(2026, 8, 14)), Optional.of("tester"), 0, 50))
+        .thenReturn(new PublishedBurgerOfTheDayPageResponse(List.of(burger), 0, 50, 1, 1));
+
+    mockMvc
+        .perform(
+            get("/burger-of-the-day")
+                .param("publish_date", "2026-08-14")
+                .param("created_by", "tester")
+                .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.content[0].id").value(42))
+        .andExpect(jsonPath("$.content[0].text").value("Fancy Burger"))
+        .andExpect(jsonPath("$.content[0].commentary").value("Comes with integration tests"))
+        .andExpect(jsonPath("$.content[0].published_at").value("2026-08-14T12:00:00Z"))
+        .andExpect(jsonPath("$.content[0].created_by").value("tester"))
+        .andExpect(jsonPath("$.page").value(0))
+        .andExpect(jsonPath("$.size").value(50))
+        .andExpect(jsonPath("$.total_elements").value(1))
+        .andExpect(jsonPath("$.total_pages").value(1));
+
+    verify(service)
+        .getBurgersOfTheDay(Optional.of(LocalDate.of(2026, 8, 14)), Optional.of("tester"), 0, 50);
+  }
+
+  @Test
+  void blankCreatorReturnsBadRequest() throws Exception {
+    mockMvc
+        .perform(
+            get("/burger-of-the-day").param("created_by", "   ").accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.error").value("created_by must not be blank"));
+
+    verifyNoInteractions(service);
+  }
 }

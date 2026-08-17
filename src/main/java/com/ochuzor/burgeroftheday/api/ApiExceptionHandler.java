@@ -2,6 +2,7 @@ package com.ochuzor.burgeroftheday.api;
 
 import com.ochuzor.burgeroftheday.burger.BurgerOfTheDayForbiddenException;
 import com.ochuzor.burgeroftheday.burger.BurgerOfTheDayNotFoundException;
+import com.ochuzor.burgeroftheday.burger.InvalidCreatorFilterException;
 import com.ochuzor.burgeroftheday.user.MissingUsernameException;
 import com.ochuzor.burgeroftheday.user.UnknownUserException;
 import org.springframework.http.HttpStatus;
@@ -68,5 +69,10 @@ public class ApiExceptionHandler {
   @ExceptionHandler(BurgerOfTheDayForbiddenException.class)
   ResponseEntity<ApiErrorResponse> handleBurgerOfTheDayForbiddenException() {
     return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiErrorResponse("forbidden"));
+  }
+
+  @ExceptionHandler(InvalidCreatorFilterException.class)
+  ResponseEntity<ApiErrorResponse> handleInvalidCreatorFilterException() {
+    return ResponseEntity.badRequest().body(new ApiErrorResponse("created_by must not be blank"));
   }
 }

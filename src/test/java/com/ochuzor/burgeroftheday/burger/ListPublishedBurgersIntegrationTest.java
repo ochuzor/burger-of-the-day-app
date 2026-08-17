@@ -81,4 +81,47 @@ class ListPublishedBurgersIntegrationTest {
         .andExpect(jsonPath("$.total_pages").value(1))
         .andExpect(jsonPath("$.content[2]").doesNotExist());
   }
+
+  @Test
+  void publishedBurgersCanBeFilteredByCreatorThroughHttp() throws Exception {
+    burgerOfTheDayRepository.deleteAll();
+    userRepository.deleteAll();
+    entityManager.flush();
+
+    User requestedUser = this.userRepository.save(new User("requested-user", "Requested user"));
+    User creatorUser = this.userRepository.save(new User("creator-user", "Creator user"));
+
+    burgerOfTheDayRepository.save(
+        new BurgerOfTheDay(
+            "Burger#1", "burger 1", Instant.parse("2026-08-10T10:00:00Z"), requestedUser));
+    burgerOfTheDayRepository.save(
+        new BurgerOfTheDay(
+            "Burger#2", "burger 2", Instant.parse("2026-08-10T12:00:00Z"), creatorUser));
+    BurgerOfTheDay hiddenBurger =
+        burgerOfTheDayRepository.save(
+            new BurgerOfTheDay(
+                "Burger#3", "burger 3", Instant.parse("2026-08-10T13:00:00Z"), requestedUser));
+
+    entityManager.flush();
+
+    entityManager
+        .createQuery(
+            "update BurgerOfTheDay burger " + "set burger.hidden = true " + "where burger.id = :id")
+        .setParameter("id", hiddenBurger.getId())
+        .executeUpdate();
+
+    entityManager.clear();
+
+    mockMvc
+        .perform(
+            get("/burger-of-the-day")
+                .param("created_by", requestedUser.getUsername())
+                .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.total_elements").value(1))
+        .andExpect(jsonPath("$.content[0].created_by").value("requested-user"))
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.content[0].text").value("Burger#1"))
+        .andExpect(jsonPath("$.content[1]").doesNotExist());
+  }
 }

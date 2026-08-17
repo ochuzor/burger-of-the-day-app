@@ -58,12 +58,17 @@ public class BurgerOfTheDayController {
       @RequestParam(name = "publish_date", required = false)
           @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           LocalDate publishDate,
+      @RequestParam(name = "created_by", required = false) String createdBy,
       @RequestParam(defaultValue = "0") @Min(0) int page,
       @RequestParam(defaultValue = "50") @Min(1) @Max(200) int size) {
 
+    if (createdBy != null && createdBy.isBlank()) {
+      throw new InvalidCreatorFilterException();
+    }
+
     PublishedBurgerOfTheDayPageResponse response =
         this.service.getBurgersOfTheDay(
-            Optional.ofNullable(publishDate), Optional.empty(), page, size);
+            Optional.ofNullable(publishDate), Optional.ofNullable(createdBy), page, size);
 
     return ResponseEntity.ok(response);
   }
