@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -380,5 +381,128 @@ class BurgerOfTheDayServiceTest {
     verify(burgerOfTheDayRepository, never())
         .findByHiddenFalseAndPublishedAtGreaterThanEqualAndPublishedAtLessThan(
             start, end, pageable);
+  }
+
+  @Test
+  void creatorBurgersIncludeVisibilityInResponse() {
+    User alice = new User("alice", "Alice");
+    when(userRepository.findByUsername("alice")).thenReturn(Optional.of(alice));
+
+    Instant publishedAt = Instant.parse("2026-08-09T12:00:00Z");
+
+    BurgerOfTheDay burger1 = mock(BurgerOfTheDay.class);
+    when(burger1.getId()).thenReturn(41L);
+    when(burger1.getText()).thenReturn("First Burger");
+    when(burger1.getCommentary()).thenReturn("First commentary");
+    when(burger1.getPublishedAt()).thenReturn(publishedAt);
+    when(burger1.getCreator()).thenReturn(alice);
+    when(burger1.isHidden()).thenReturn(false);
+
+    BurgerOfTheDay burger2 = mock(BurgerOfTheDay.class);
+    when(burger2.getId()).thenReturn(42L);
+    when(burger2.getText()).thenReturn("Second Burger");
+    when(burger2.getCommentary()).thenReturn("Second commentary");
+    when(burger2.getPublishedAt()).thenReturn(publishedAt);
+    when(burger2.getCreator()).thenReturn(alice);
+    when(burger2.isHidden()).thenReturn(true);
+
+    List<BurgerOfTheDay> burgers = List.of(burger1, burger2);
+
+    Pageable pageable =
+        PageRequest.of(0, 50, Sort.by(Sort.Order.desc("publishedAt"), Sort.Order.desc("id")));
+
+    PageImpl<BurgerOfTheDay> repositoryPage = new PageImpl<>(burgers, pageable, 2);
+    when(burgerOfTheDayRepository.findByCreator(alice, pageable)).thenReturn(repositoryPage);
+
+    CreatorBurgerOfTheDayPageResponse response =
+        service.getCreatorBurgersOfTheDay("alice", Optional.empty(), 0, 50);
+
+    CreatorBurgerOfTheDayResponse first = response.content().get(0);
+    assertThat(first.id()).isEqualTo(41L);
+    assertThat(first.text()).isEqualTo("First Burger");
+    assertThat(first.commentary()).isEqualTo("First commentary");
+    assertThat(first.publishedAt()).isEqualTo(publishedAt);
+    assertThat(first.createdBy()).isEqualTo("alice");
+    assertThat(first.hidden()).isFalse();
+
+    CreatorBurgerOfTheDayResponse second = response.content().get(1);
+    assertThat(second.id()).isEqualTo(42L);
+    assertThat(second.text()).isEqualTo("Second Burger");
+    assertThat(second.commentary()).isEqualTo("Second commentary");
+    assertThat(second.publishedAt()).isEqualTo(publishedAt);
+    assertThat(second.createdBy()).isEqualTo("alice");
+    assertThat(second.hidden()).isTrue();
+
+    assertThat(response.content()).hasSize(2);
+    assertThat(response.page()).isZero();
+    assertThat(response.size()).isEqualTo(50);
+    assertThat(response.totalElements()).isEqualTo(2);
+    assertThat(response.totalPages()).isEqualTo(1);
+
+    verify(burgerOfTheDayRepository).findByCreator(alice, pageable);
+    verify(burgerOfTheDayRepository, never())
+        .findByCreatorAndPublishedAtGreaterThanEqualAndPublishedAtLessThan(
+            eq(alice), any(Instant.class), any(Instant.class), eq(pageable));
+  }
+
+  @Test
+  void creatorBurgersCanBeFilteredByPublicationDate() {
+    User alice = mock(User.class);
+    when(alice.getUsername()).thenReturn("alice");
+    when(userRepository.findByUsername("alice")).thenReturn(Optional.of(alice));
+
+    BurgerOfTheDay burger = mock(BurgerOfTheDay.class);
+    when(burger.getId()).thenReturn(41L);
+    when(burger.getText()).thenReturn("First Burger");
+    when(burger.getCommentary()).thenReturn("First commentary");
+    when(burger.getPublishedAt()).thenReturn(Instant.parse("2026-08-09T12:00:00Z"));
+    when(burger.getCreator()).thenReturn(alice);
+    when(burger.isHidden()).thenReturn(true);
+
+    LocalDate requestedDate = LocalDate.of(2026, 8, 9);
+
+    Instant start = requestedDate.atStartOfDay(ZoneOffset.UTC).toInstant();
+    Instant end = requestedDate.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+
+    Pageable pageable =
+        PageRequest.of(0, 50, Sort.by(Sort.Order.desc("publishedAt"), Sort.Order.desc("id")));
+
+    PageImpl<BurgerOfTheDay> repositoryPage = new PageImpl<>(List.of(burger), pageable, 1);
+
+    when(burgerOfTheDayRepository.findByCreatorAndPublishedAtGreaterThanEqualAndPublishedAtLessThan(
+            alice, start, end, pageable))
+        .thenReturn(repositoryPage);
+
+    CreatorBurgerOfTheDayPageResponse response =
+        service.getCreatorBurgersOfTheDay("alice", Optional.of(requestedDate), 0, 50);
+
+    CreatorBurgerOfTheDayResponse first = response.content().get(0);
+    assertThat(first.id()).isEqualTo(41L);
+    assertThat(first.text()).isEqualTo("First Burger");
+    assertThat(first.commentary()).isEqualTo("First commentary");
+    assertThat(first.publishedAt()).isEqualTo(Instant.parse("2026-08-09T12:00:00Z"));
+    assertThat(first.createdBy()).isEqualTo("alice");
+    assertThat(first.hidden()).isTrue();
+
+    assertThat(response.content()).hasSize(1);
+    assertThat(response.page()).isZero();
+    assertThat(response.size()).isEqualTo(50);
+    assertThat(response.totalElements()).isEqualTo(1);
+    assertThat(response.totalPages()).isEqualTo(1);
+
+    verify(burgerOfTheDayRepository)
+        .findByCreatorAndPublishedAtGreaterThanEqualAndPublishedAtLessThan(
+            alice, start, end, pageable);
+    verify(burgerOfTheDayRepository, never()).findByCreator(alice, pageable);
+  }
+
+  @Test
+  void unknownUserCannotListCreatorBurgers() {
+    when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
+    assertThatThrownBy(() -> service.getCreatorBurgersOfTheDay("unknown", Optional.empty(), 0, 50))
+        .isInstanceOf(UnknownUserException.class)
+        .hasMessage("user not found");
+
+    verifyNoInteractions(burgerOfTheDayRepository);
   }
 }

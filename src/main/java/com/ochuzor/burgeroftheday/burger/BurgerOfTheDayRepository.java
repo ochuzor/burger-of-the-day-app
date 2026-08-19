@@ -1,5 +1,6 @@
 package com.ochuzor.burgeroftheday.burger;
 
+import com.ochuzor.burgeroftheday.user.User;
 import java.time.Instant;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,4 +18,9 @@ public interface BurgerOfTheDayRepository extends JpaRepository<BurgerOfTheDay, 
   Page<BurgerOfTheDay>
       findByHiddenFalseAndCreatorUsernameAndPublishedAtGreaterThanEqualAndPublishedAtLessThan(
           String username, Instant start, Instant end, Pageable pageable);
+
+  Page<BurgerOfTheDay> findByCreator(User creator, Pageable pageable);
+
+  Page<BurgerOfTheDay> findByCreatorAndPublishedAtGreaterThanEqualAndPublishedAtLessThan(
+      User creator, Instant start, Instant end, Pageable pageable);
 }

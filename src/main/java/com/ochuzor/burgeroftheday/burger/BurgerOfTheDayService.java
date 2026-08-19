@@ -139,4 +139,46 @@ public class BurgerOfTheDayService {
 
     burger.setHidden(hidden);
   }
+
+  @Transactional(readOnly = true)
+  public CreatorBurgerOfTheDayPageResponse getCreatorBurgersOfTheDay(
+      String username, Optional<LocalDate> publishDate, int page, int size) {
+    User creator =
+        this.userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new UnknownUserException("user not found"));
+
+    Pageable pageable =
+        PageRequest.of(page, size, Sort.by(Sort.Order.desc("publishedAt"), Sort.Order.desc("id")));
+
+    Page<BurgerOfTheDay> burgerPage;
+    if (publishDate.isEmpty()) {
+      burgerPage = burgerOfTheDayRepository.findByCreator(creator, pageable);
+    } else {
+      Instant start = publishDate.get().atStartOfDay(ZoneOffset.UTC).toInstant();
+      Instant end = publishDate.get().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+      burgerPage =
+          burgerOfTheDayRepository
+              .findByCreatorAndPublishedAtGreaterThanEqualAndPublishedAtLessThan(
+                  creator, start, end, pageable);
+    }
+
+    Page<CreatorBurgerOfTheDayResponse> responsePage =
+        burgerPage.map(
+            burger ->
+                new CreatorBurgerOfTheDayResponse(
+                    burger.getId(),
+                    burger.getText(),
+                    burger.getCommentary(),
+                    burger.getPublishedAt(),
+                    burger.getCreator().getUsername(),
+                    burger.isHidden()));
+
+    return new CreatorBurgerOfTheDayPageResponse(
+        responsePage.getContent(),
+        responsePage.getNumber(),
+        responsePage.getSize(),
+        responsePage.getTotalElements(),
+        responsePage.getTotalPages());
+  }
 }
