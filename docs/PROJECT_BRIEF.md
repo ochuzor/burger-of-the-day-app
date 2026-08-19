@@ -159,11 +159,15 @@ Repository setup completed so far:
   27-test Maven verification, Spotless check, and JAR packaging pass.
 - VS Code uses the same pinned google-java-format version as Spotless and loads
   the ignored local `.env` file when tests are launched from the editor.
+- Maven resolves the Spring Boot-managed `mockito-core` artifact and supplies it
+  to Surefire as an explicit Java agent. The 65-test verification completes
+  without Mockito self-attachment or dynamic-agent-loading warnings.
 
 ## Next task
 
-Configure Mockito as an explicit Maven test JVM agent, removing its deprecated
-dynamic self-attachment and preparing the test build for future JDK releases.
+Provide a safe local-development seed user so a fresh database can exercise the
+temporary `X-Username` create, management-listing, and visibility flows without
+manual SQL, while keeping environment-specific demo data out of production.
 
 ## Important decisions
 
