@@ -135,6 +135,16 @@ Repository setup completed so far:
   existing burger and returns `204 No Content`. Missing or unknown users are
   unauthorized, non-creators receive a stable forbidden response, and repeated
   requests for the current state are idempotent.
+- Creator management `GET /me/burger-of-the-day` returns all posts belonging to
+  the identified creator, including hidden posts. It supports the same optional
+  UTC `publish_date` filter, stable ordering, and pagination contract as the
+  public listing while adding each post's `hidden` state to its management DTO.
+  Missing, blank, and unknown temporary usernames remain unauthorized.
+- Focused repository, service, and web tests cover creator ownership, hidden
+  inclusion, UTC date filtering, pagination, input errors, and authorization.
+  A PostgreSQL-backed HTTP test verifies the complete management listing. The
+  full 65-test Maven verification, Spotless check, and executable JAR packaging
+  pass.
 - Focused service and controller tests cover ownership, missing users and
   burgers, request validation, and HTTP error mapping. A PostgreSQL-backed HTTP
   integration test verifies the complete visible-to-hidden-to-visible lifecycle
@@ -152,8 +162,8 @@ Repository setup completed so far:
 
 ## Next task
 
-Add an authenticated creator-management listing so creators can find all their
-own posts, including hidden posts that they may want to unhide.
+Configure Mockito as an explicit Maven test JVM agent, removing its deprecated
+dynamic self-attachment and preparing the test build for future JDK releases.
 
 ## Important decisions
 
