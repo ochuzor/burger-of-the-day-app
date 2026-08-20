@@ -162,12 +162,20 @@ Repository setup completed so far:
 - Maven resolves the Spring Boot-managed `mockito-core` artifact and supplies it
   to Surefire as an explicit Java agent. The 65-test verification completes
   without Mockito self-attachment or dynamic-agent-loading warnings.
+- A `local`-profile application initializer idempotently creates the temporary
+  `tester` user. Focused unit tests cover the missing-user and existing-user
+  paths, and a real PostgreSQL-backed startup and create request verified that
+  no manual SQL is required for local use.
+- The public-facing README documents the product, implemented features,
+  technology, reproducible local setup, API contracts and examples, testing and
+  packaging, current limitations, and the AI-assisted mentoring workflow.
 
 ## Next task
 
-Provide a safe local-development seed user so a fresh database can exercise the
-temporary `X-Username` create, management-listing, and visibility flows without
-manual SQL, while keeping environment-specific demo data out of production.
+Audit the repository before making it public: inspect tracked and untracked
+files for secrets and machine-specific data, verify ignore rules and repository
+metadata, and decide on a license before the final clean-database build and HTTP
+walkthrough.
 
 ## Important decisions
 
@@ -213,11 +221,16 @@ manual SQL, while keeping environment-specific demo data out of production.
 - The listing API returns an application-owned page response containing
   `content`, `page`, `size`, `total_elements`, and `total_pages`, rather than
   exposing Spring Data's `Page` serialization as the HTTP contract.
+- The intended production architecture is a small self-managed VPS running the
+  Spring Boot application and its PostgreSQL database. Authentication will be
+  delegated to a managed identity provider; application data will remain in
+  the VPS-hosted PostgreSQL database.
 
 ### Pending
 
-- Deployment target
-- Production identity provider; Supabase Auth and Supabase PostgreSQL are under
-  consideration, but the discussion is currently paused.
+- Exact VPS provider and deployment configuration
+- Production identity provider; Supabase Auth is currently the leading option,
+  but provider selection and authentication implementation are deferred until
+  after the local backend MVP.
 
 Record future decisions here with enough context to explain why they were made.
