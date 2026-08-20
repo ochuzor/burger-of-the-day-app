@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -32,6 +33,13 @@ class BurgerOfTheDayRepositoryTest {
     this.burgerOfTheDayRepository = burgerOfTheDayRepository;
     this.userRepository = userRepository;
     this.entityManager = entityManager;
+  }
+
+  @BeforeEach
+  void clearDatabase() {
+    burgerOfTheDayRepository.deleteAll();
+    userRepository.deleteAll();
+    entityManager.flush();
   }
 
   @Test
